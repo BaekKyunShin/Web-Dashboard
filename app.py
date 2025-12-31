@@ -101,73 +101,104 @@ else:
     from src.modules.llm_logic import run_diagnosis_agent, find_matching_solutions, generate_roadmap
     import time
     
-    # 1. Diagnosis Section
-    st.markdown("<div class='section-subheader'>1. 기업 AI 도입 역량 진단 (Diagnosis)</div>", unsafe_allow_html=True)
+    # Loading Overlay Injection
+    loading_placeholder = st.empty()
+    loading_placeholder.markdown("""
+        <div class='loading-overlay'>
+            <div class='spinner'></div>
+            <div class='loading-text'>AI 솔루션 및 로드맵 생성 중...</div>
+        </div>
+    """, unsafe_allow_html=True)
     
-    diagnosis_placeholder = st.empty()
-    with diagnosis_placeholder.container():
-        with card_container():
-            st.write("🔄 **AI 에이전트가 기업 프로필과 페인 포인트를 분석 중입니다...**")
-            st.progress(30)
-            
-    # Run Diagnosis Agent
+    # 1. Diagnosis Section
+    # Check API Key
     if "OPENAI_API_KEY" not in st.secrets:
+        loading_placeholder.empty()
         st.error("🚨 OpenAI API Key가 설정되지 않았습니다. .streamlit/secrets.toml 파일을 확인해주세요.")
         st.stop()
         
     diagnosis_result = run_diagnosis_agent(industry, company_size, pain_point)
     
-    if diagnosis_result:
-        with diagnosis_placeholder.container():
-            with card_container():
-                st.markdown(f"#### 🩺 진단 요약 (Urgency: {diagnosis_result.urgency})")
-                st.info(f"**핵심 문제**: {diagnosis_result.problem_summary}")
-                st.write(f"**추출된 키워드**: {', '.join(diagnosis_result.key_keywords)}")
-    
-    # 2. Recommended Solutions
-    st.markdown("<div class='section-subheader'>2. 맞춤형 솔루션 추천 (Best Fit Solutions)</div>", unsafe_allow_html=True)
-    
-    tools_placeholder = st.empty()
-    with tools_placeholder.container():
-        st.write("🔍 **데이터베이스에서 최적의 솔루션을 매칭하고 있습니다...**")
-    
-    # Run Matching Logic
+    # 2. Matching Solutions
     try:
         df = pd.read_csv("data/tools_db.csv")
         recommended_tools = find_matching_solutions(df, diagnosis_result.key_keywords if diagnosis_result else [])
     except Exception as e:
-        st.error(f"DB Error: {e}")
         recommended_tools = []
-
-    if recommended_tools:
-        tools_placeholder.empty()
-        cols = st.columns(len(recommended_tools))
         
-        for i, tool in enumerate(recommended_tools):
-            with cols[i]:
-                with card_container():
-                    st.markdown(f"#### {'🥇' if i==0 else '🥈'} {tool['Tool Name']}")
-                    st.caption(f"Category: {tool['Category']}")
-                    st.markdown(f"**{tool['Description']}**")
-                    st.markdown(f"비용 모델: {tool['Pricing Model']}")
-                    st.success(f"매칭 점수: {tool.get('match_score', 0)}점")
-                    
-    # 3. Education Roadmap
-    st.markdown("<div class='section-subheader'>3. 단계별 도입 및 교육 로드맵 (Action Plan)</div>", unsafe_allow_html=True)
-    
-    roadmap_placeholder = st.empty()
-    with roadmap_placeholder.container():
-        with card_container():
-            st.write("📅 **상세 로드맵 보고서를 생성 중입니다 (GPT-4o Generating)...**")
-            st.spinner("Thinking...")
-            
-    # Run Roadmap Agent
+    # 3. Roadmap Generation
     if recommended_tools:
         roadmap_markdown = generate_roadmap(industry, pain_point, recommended_tools)
-        
-        with roadmap_placeholder.container():
-            with card_container():
-                st.markdown(roadmap_markdown)
     else:
-         with roadmap_placeholder.container():
-            st.warning("추천된 솔루션이 없어 로드맵을 생성할 수 없습니다.")
+        roadmap_markdown = ""
+        
+    # --- PROCESSING COMPLETE: REMOVE OVERLAY ---
+    loading_placeholder.empty()
+    
+    # --- RENDER RESULTS ---
+    
+    # [1] Diagnosis
+    st.markdown("<div class='section-subheader'>1. 기업 AI 도입 역량 진단 (Diagnosis)</div>", unsafe_allow_html=True)
+    
+    if diagnosis_result:
+        with card_container():
+            st.markdown(f"#### 🩺 진단 요약 (Urgency: {diagnosis_result.urgency})")
+            st.info(f"**핵심 문제**: {diagnosis_result.problem_summary}")
+            st.write(f"**추출된 키워드**: {', '.join(diagnosis_result.key_keywords)}")
+    
+    # [2] Solutions
+    st.markdown("<div class='section-subheader'>2. 맞춤형 솔루션 추천 (Best Fit Solutions)</div>", unsafe_allow_html=True)
+    
+    if recommended_tools:
+        # Layout: Grid of 2 columns x 2 rows (since we output 4 items)
+        # Using st.columns(2) inside a loop if more items, but we fixed it to 4.
+        # Let's use st.columns(2) for better visibility on mobile/tablet than 4.
+        
+        rows = [recommended_tools[i:i + 2] for i in range(0, len(recommended_tools), 2)]
+        for row_tools in rows:
+            cols = st.columns(2)
+            for col, tool in zip(cols, row_tools):
+                with col:
+                    with card_container():
+                        st.markdown(f"#### 🏆 {tool['Tool Name']}")
+                        st.caption(f"Category: {tool['Category']}")
+                        st.markdown(f"**{tool['Description']}**")
+                        st.markdown(f"비용 모델: {tool['Pricing Model']}")
+                        st.progress(tool.get('match_score', 0)/5.0, text=f"매칭 적합도: {tool.get('match_score', 0)}점")
+
+    # [3] Roadmap
+    st.markdown("<div class='section-subheader'>3. 단계별 도입 및 교육 로드맵 (Action Plan)</div>", unsafe_allow_html=True)
+    
+    if roadmap_markdown:
+        # Simple splitting by headers for UI
+        # Roadmap is Markdown. Let's just render it nicely or split.
+        # Splitting by '## '
+        sections = roadmap_markdown.split('## ')
+        
+        # Section 0 is usually introductory empty or title.
+        # Section 1: Strategy
+        # Section 2: Action Plan
+        # Section 3: Budget
+        
+        for section in sections:
+            if not section.strip(): continue
+            
+            lines = section.split('\n')
+            header = lines[0].strip()
+            content = "\n".join(lines[1:])
+            
+            if "도입 전략" in header or "Strategy" in header:
+                with st.container():
+                     st.markdown(f"### {header}")
+                     st.markdown(content)
+            elif "실행 계획" in header or "Action Plan" in header:
+                with st.expander(f"📌 {header} (클릭하여 상세 보기)", expanded=True):
+                    st.markdown(content)
+            elif "예산" in header or "ROI" in header:
+                with st.container():
+                    st.success(f"### {header}\n{content}")
+            else:
+                # Fallback
+                st.markdown(f"## {section}")
+    else:
+         st.warning("추천된 솔루션이 없어 로드맵을 생성할 수 없습니다.")
