@@ -152,22 +152,31 @@ else:
     if recommended_tools:
         # Layout: Grid of 3 columns (User requested 3 items)
         
-        # Benefit Text Generator
-        def get_benefit_text(category):
+        # Benefit Text Generator (Matched with Reference Image Style)
+        def get_benefit_text(tool_name, category):
+            tool = tool_name.lower()
             cat = category.lower()
-            if "마케팅" in cat: return "콘텐츠 생성 시간 단축 및 품질 향상 기대 (효율 +40%)"
-            if "영업" in cat: return "고객 데이터 분석을 통한 영업 기회 포착 및 매출 증대"
-            if "생산성" in cat or "업무" in cat: return "반복 업무 자동화를 통해 업무 처리 속도 2배 향상"
-            if "분석" in cat: return "데이터 기반 의사결정으로 비즈니스 인사이트 도출 가속화"
-            if "디자인" in cat: return "창의적 디자인 시안 생성 시간 90% 단축"
-            if "개발" in cat: return "코드 자동 생성 및 디버깅 지원으로 개발 생산성 향상"
-            return "AI 도입을 통해 기존 업무 방식의 혁신적인 효율화 기대"
+            
+            # Specific Data Mapping for Demo/Visual consistency
+            if "zapier" in tool: return "업무 프로세스 자동화를 통해 수작업 시간을 최소화하고, 30% 이상의 업무 효율성을 기대할 수 있습니다."
+            if "notion" in tool: return "프로젝트 문서화 및 팀 협업 개선을 통해 작업 혼란을 40% 이상 감소시킬 수 있습니다."
+            if "fireflies" in tool: return "자동화된 회의록과 요약 기능으로 정보 전달 시간을 50% 이상 줄일 수 있습니다."
+            if "chatgpt" in tool: return "엔터프라이즈급 보안 환경에서 임직원의 업무 질문 및 문서 초안 작성을 즉각 지원합니다."
+            if "jasper" in tool: return "브랜드 보이스에 맞는 고품질 마케팅 콘텐츠를 10배 빠르게 제작할 수 있습니다."
+            if "midjourney" in tool: return "생성형 AI 디자인 프로세스를 도입하여 시안 제작 비용을 획기적으로 절감할 수 있습니다."
+            
+            # Fallback based on category
+            if "마케팅" in cat: return "마케팅 캠페인 자동화 및 콘텐츠 생성 효율을 40% 이상 높일 수 있습니다."
+            if "영업" in cat: return "고객 데이터 분석을 통한 잠재 고객 발굴 및 계약 성사율 증대가 기대됩니다."
+            if "생산성" in cat or "자동화" in cat: return "반복 업무 자동화를 통해 수작업 시간을 최소화하고 업무 효율성을 극대화합니다."
+            if "분석" in cat: return "데이터 기반의 신속한 의사결정으로 비즈니스 인사이트 도출 시간을 단축합니다."
+            return "AI 도입을 통해 기존 업무 방식의 혁신적인 효율화와 생산성 향상을 기대할 수 있습니다."
 
         # Use columns(3) for 3 items
         cols = st.columns(3)
         for i, tool in enumerate(recommended_tools):
             with cols[i]:
-                benefit_text = get_benefit_text(tool['Category'])
+                benefit_text = get_benefit_text(tool['Tool Name'], tool['Category'])
                 # IMPORTANT: No indentation inside the HTML string to prevent Markdown code block interpretation
                 html_content = f"""
 <div class="solution-card">
