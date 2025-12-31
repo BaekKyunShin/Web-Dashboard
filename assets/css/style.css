@@ -1,0 +1,247 @@
+/* Fonts - Pretendard Support added */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css");
+
+html,
+body,
+[class*="css"] {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+    color: #334155;
+}
+
+/* Background & Main Container */
+/* Background & Main Container */
+.stApp {
+    background-color: #FFFFFF;
+    /* Main content white for crispness */
+}
+
+/* Sidebar Styling - LIGHT THEME (Soft Slate) */
+[data-testid="stSidebar"] {
+    background-color: #F8FAFC;
+    /* Very subtle slate instead of deep navy */
+    border-right: 1px solid #E2E8F0;
+}
+
+/* Sidebar Text Colors - Dark for readability */
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3,
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] div {
+    color: #0F172A !important;
+    /* Deep Dark Navy Text */
+}
+
+[data-testid="stSidebar"] p {
+    color: #475569 !important;
+    /* Slate 600 */
+}
+
+/* Sidebar Input Fields - Light Theme */
+[data-testid="stSidebar"] .stTextInput>div>div>input,
+[data-testid="stSidebar"] .stSelectbox>div>div>div,
+[data-testid="stSidebar"] .stTextArea>div>div>textarea {
+    background-color: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    color: #0F172A;
+    /* Dark text */
+}
+
+[data-testid="stSidebar"] input::placeholder,
+[data-testid="stSidebar"] textarea::placeholder {
+    color: #94A3B8 !important;
+}
+
+[data-testid="stSidebar"] .stSelectbox>div>div>div {
+    color: #0F172A !important;
+}
+
+/* Fix Selectbox dropdown menu visibility */
+ul[data-testid="stSelectboxVirtualDropdown"] {
+    background-color: #FFFFFF !important;
+    border: 1px solid #E2E8F0;
+}
+
+ul[data-testid="stSelectboxVirtualDropdown"] li {
+    color: #334155 !important;
+}
+
+[data-testid="stSidebar"] .stSlider>div>div>div>div {
+    color: #3B82F6;
+    /* Primary Blue slider */
+}
+
+/* Card Styling (Custom Container) */
+.card-container {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    /* Slightly more rounded */
+    padding: 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    margin-bottom: 24px;
+}
+
+/* Input Fields (Main Content) */
+.main .stTextInput>div>div>input {
+    border-radius: 8px;
+    border: 1px solid #CBD5E1;
+    color: #334155;
+    background-color: #FFFFFF;
+    padding: 10px 12px;
+    transition: all 0.2s ease;
+}
+
+.main .stTextInput>div>div>input:focus {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Buttons */
+.stButton>button {
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.5rem 1.25rem;
+    border: none;
+    transition: all 0.2s;
+}
+
+.stButton>button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Primary Button */
+.stButton>button[kind="primary"] {
+    background-color: #2563EB;
+    color: #FFFFFF !important;
+    border: none;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding-top: 0.5rem !important;
+    /* Reset padding to ensure centering */
+    padding-bottom: 0.5rem !important;
+    line-height: normal !important;
+    /* Let flexbox handle vertical alignment */
+}
+
+.stButton>button[kind="primary"] p {
+    color: #FFFFFF !important;
+}
+
+/* Secondary Button */
+.stButton>button[kind="secondary"] {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    color: #334155;
+}
+
+/* Tables / DataFrames */
+[data-testid="stDataFrame"] {
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: #FFFFFF;
+}
+
+[data-testid="stDataFrame"] th {
+    background-color: #F8FAFC;
+    color: #475569;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* Metrics - Compact Refined */
+[data-testid="stMetric"] {
+    background-color: #FFFFFF;
+    padding: 12px 16px;
+    /* Reduced from 20px 24px */
+    border-radius: 12px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+[data-testid="stMetricLabel"] {
+    color: #64748B;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+[data-testid="stMetricValue"] {
+    color: #0F172A;
+    font-weight: 700;
+    font-size: 1.5rem;
+    /* Reduced from 2rem */
+    letter-spacing: -0.025em;
+}
+
+/* COMPACT LAYOUT: Extreme Padding Reduction */
+.block-container {
+    padding-top: 1.5rem !important;
+    /* Minimized top padding */
+    padding-bottom: 2rem !important;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+}
+
+/* Compact Sidebar */
+[data-testid="stSidebar"] {
+    background-color: #F8FAFC;
+    border-right: 1px solid #E2E8F0;
+    padding-top: 1rem !important;
+}
+
+/* Reduce Streamlit's default large gaps between elements */
+div[data-testid="stVerticalBlock"]>div {
+    gap: 0.5rem !important;
+    /* Default is often 1rem+ */
+    padding-bottom: 0px !important;
+}
+
+/* Custom Headers - Compact & Balanced */
+.section-header {
+    color: #0F172A;
+    font-weight: 800;
+    font-size: 2.0rem;
+    margin-bottom: 0.3rem !important;
+    /* Tight margin */
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+}
+
+.section-subheader {
+    color: #1E293B;
+    font-weight: 700;
+    font-size: 1.15rem;
+    margin-top: 1.0rem !important;
+    /* Reduced top margin */
+    margin-bottom: 0.5rem !important;
+    letter-spacing: -0.01em;
+}
+
+.subtitle {
+    color: #475569;
+    font-size: 1.15rem;
+    margin-bottom: 1.5rem !important;
+    /* Increased spacing */
+    line-height: 1.4;
+    font-weight: 500;
+}
+
+/* Force margin reduction on standard markdown elements if needed */
+[data-testid="stMarkdownContainer"] p {
+    margin-bottom: 0.5rem !important;
+}
+
+
+/* Badge Style for status */
+.badge {
+    background-color: #DBEAFE;
+    color: #1E40AF;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
