@@ -48,7 +48,7 @@ def run_diagnosis_agent(industry, company_size, pain_points):
         {pain_points}
         
         Your Goal:
-        1. Summarize the core problem concisely in Korean.
+        1. Summarize the core bottleneck in ONE sentence using the exact format: "귀사의 가장 큰 병목 구간은 [Problem Summary]입니다."
         2. Identify 3-5 key technical keywords (e.g., 'NLP', 'Chatbot', 'Predictive Maintenance', 'RAG') that would solve these problems.
         3. Determine the urgency of AI adoption.
         
@@ -122,7 +122,7 @@ def generate_roadmap(industry, pain_points, recommended_tools):
         Recommended Solutions:
         {tools_str}
         
-        Generate a structured Markdown report in Korean. Use the following exact headers:
+        Generate a structured Markdown report in Korean. Use the following exact headers and format:
         
         ## 1. 🚀 도입 전략 (Strategy)
         Explain why these tools are the best fit.
@@ -132,10 +132,11 @@ def generate_roadmap(industry, pain_points, recommended_tools):
         - **Phase 2: Expansion (3-6 months)**: How to scale?
         - **Phase 3: Transformation (6+ months)**: Long-term value.
         
-        ## 3. 💰 예상 예산 및 ROI
-        Provide a rough estimation.
+        ## 3. 🎓 임직원 교육 커리큘럼 (Curriculum)
+        Create a markdown table with the columns: [단계 | 교육명 | 주요 내용 | 산출물].
+        Populate the table with at least 3 rows (Introduction, Advanced, Expert).
         
-        IMPORTANT: Ensure the sections are clearly separated by headers.
+        IMPORTANT: Ensure the sections are clearly separated by headers. Do NOT include ```markdown fences.
         """,
         input_variables=["industry", "pain_points", "tools_str"]
     )

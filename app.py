@@ -45,12 +45,9 @@ with st.sidebar:
             label_visibility="collapsed"
         )
         
-        # Callback to handle form submission reliably
-        def on_analyze_submit():
-            st.session_state['analysis_done'] = False
-            st.session_state['trigger_analysis'] = True
-
-        analyze_submitted = st.form_submit_button("AI 솔루션 & 로드맵 생성", type="primary", use_container_width=True, on_click=on_analyze_submit)
+        
+        # Simple submit button (Reset to standard behavior for reliability)
+        analyze_submitted = st.form_submit_button("AI 솔루션 & 로드맵 생성", type="primary", use_container_width=True)
     
     st.markdown("---")
     st.caption("Powered by GPT-4o & Streamlit\nVer 1.1.0 Platinum KR")
@@ -63,8 +60,7 @@ display_header("KPC 기업 맞춤형 AX 인사이트 (Insight)", "AS-IS 정밀 �
 # --- Session State Initialization ---
 if 'analysis_done' not in st.session_state:
     st.session_state['analysis_done'] = False
-if 'trigger_analysis' not in st.session_state:
-    st.session_state['trigger_analysis'] = False
+# Removed trigger_analysis flag to simplify logic
 if 'diagnosis_result' not in st.session_state:
     st.session_state['diagnosis_result'] = None
 if 'recommended_tools' not in st.session_state:
@@ -72,7 +68,7 @@ if 'recommended_tools' not in st.session_state:
 if 'roadmap_markdown' not in st.session_state:
     st.session_state['roadmap_markdown'] = ""
 
-if not st.session_state['analysis_done'] and not st.session_state['trigger_analysis']:
+if not st.session_state['analysis_done'] and not analyze_submitted:
     # Initial State (Empty State)
     st.info("👈 좌측 사이드바에 기업 정보를 입력하고 '솔루션 생성' 버튼을 눌러주세요.")
     
@@ -130,10 +126,12 @@ if not st.session_state['analysis_done'] and not st.session_state['trigger_analy
 
 else:
     # --- Step 3: Agent Execution Logic (Triggered by Form Submit) ---
-    if st.session_state['trigger_analysis']:
-        # Reset Trigger immediately to prevent re-runs without click
-        st.session_state['trigger_analysis'] = False
+    if analyze_submitted:
+        # Reset previous state for fresh run
+        st.session_state['analysis_done'] = False
+        
         from src.modules.llm_logic import run_diagnosis_agent, find_matching_solutions, generate_roadmap
+        import textwrap
         
         # Loading Overlay Injection
         loading_placeholder = st.empty()
@@ -164,10 +162,12 @@ else:
             
         # 3. Roadmap Generation
         if recommended_tools:
-            roadmap_markdown = generate_roadmap(industry, pain_point, recommended_tools)
+            raw_roadmap = generate_roadmap(industry, pain_point, recommended_tools)
+            # Clean Markdown artifacts
+            cleaned_roadmap = raw_roadmap.replace("```markdown", "").replace("```", "").strip()
+            st.session_state['roadmap_markdown'] = cleaned_roadmap
         else:
-            roadmap_markdown = ""
-        st.session_state['roadmap_markdown'] = roadmap_markdown
+            st.session_state['roadmap_markdown'] = ""
             
         # --- PROCESSING COMPLETE: REMOVE OVERLAY ---
         loading_placeholder.empty()
@@ -222,23 +222,24 @@ else:
             with cols[i]:
                 benefit_text = get_benefit_text(tool['Tool Name'], tool['Category'])
                 # IMPORTANT: No indentation inside the HTML string to prevent Markdown code block interpretation
-                html_content = f"""
-<div class="solution-card">
-    <div class="solution-header">
-        <h3 class="solution-title">{tool['Tool Name']}</h3>
-    </div>
-    <span class="solution-badge">{tool['Category']}</span>
-    
-    <div class="solution-section-label">추천 이유:</div>
-    <div class="solution-description">
-        {tool['Description']}
-    </div>
-    
-    <div class="solution-benefit-box">
-        <span>{benefit_text}</span>
-    </div>
-</div>
-"""
+                # Using textwrap.dedent to safely handle indentation in code but output raw HTML string
+                html_content = textwrap.dedent(f"""
+                    <div class="solution-card">
+                        <div class="solution-header">
+                            <h3 class="solution-title">{tool['Tool Name']}</h3>
+                        </div>
+                        <span class="solution-badge">{tool['Category']}</span>
+                        
+                        <div class="solution-section-label">추천 이유:</div>
+                        <div class="solution-description">
+                            {tool['Description']}
+                        </div>
+                        
+                        <div class="solution-benefit-box">
+                            <span>{benefit_text}</span>
+                        </div>
+                    </div>
+                """)
                 st.markdown(html_content, unsafe_allow_html=True)
 
     # [3] Roadmap
@@ -269,9 +270,10 @@ else:
             elif "실행 계획" in header or "Action Plan" in header:
                 with st.expander(f"📌 {header} (클릭하여 상세 보기)", expanded=True):
                     st.markdown(content)
-            elif "예산" in header or "ROI" in header:
+            elif "예산" in header or "ROI" in header or "커리큘럼" in header or "Curriculum" in header:
                 with st.container():
-                    st.success(f"### {header}\n{content}")
+                    st.markdown(f"### {header}")
+                    st.markdown(content)
             else:
                 # Fallback
                 st.markdown(f"## {section}")
