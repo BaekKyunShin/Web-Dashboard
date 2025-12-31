@@ -111,6 +111,10 @@ else:
             st.progress(30)
             
     # Run Diagnosis Agent
+    if "OPENAI_API_KEY" not in st.secrets:
+        st.error("🚨 OpenAI API Key가 설정되지 않았습니다. .streamlit/secrets.toml 파일을 확인해주세요.")
+        st.stop()
+        
     diagnosis_result = run_diagnosis_agent(industry, company_size, pain_point)
     
     if diagnosis_result:

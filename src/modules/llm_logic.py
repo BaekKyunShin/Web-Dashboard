@@ -1,9 +1,8 @@
 import streamlit as st
 import pandas as pd
 from langchain_openai import ChatOpenAI
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
-from langchain.output_parsers import PydanticOutputParser
+from langchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 from typing import List
 
@@ -30,6 +29,7 @@ class DiagnosisOutput(BaseModel):
     key_keywords: List[str] = Field(description="List of 3-5 technical keywords related to AI solutions for these pain points.")
     urgency: str = Field(description="Urgency level: 'High', 'Medium', or 'Low'.")
 
+@st.cache_data(show_spinner=False)
 def run_diagnosis_agent(industry, company_size, pain_points):
     llm = get_llm()
     if not llm: return None
@@ -72,6 +72,7 @@ def run_diagnosis_agent(industry, company_size, pain_points):
         return None
 
 # --- 2. Matching Logic (Rule-based + Semantic implementation possibility) ---
+@st.cache_data(show_spinner=False)
 def find_matching_solutions(df, keywords: List[str]):
     """
     Simple keyword matching against the CSV tools database.
@@ -101,10 +102,13 @@ def find_matching_solutions(df, keywords: List[str]):
     return top_results.to_dict('records')
 
 # --- 3. Roadmap Agent ---
+@st.cache_data(show_spinner=False)
 def generate_roadmap(industry, pain_points, recommended_tools):
     llm = get_llm()
     if not llm: return "API Key Missing"
 
+    # Convert dicts to hashable tuple for caching if needed, but streamlit handles dicts in cache_data usually fine as/if they are JSON serializable. 
+    # Actually, recommended_tools is a list of dicts. 
     tools_str = "\n".join([f"- {t['Tool Name']} ({t['Category']}): {t['Description']}" for t in recommended_tools])
 
     prompt = PromptTemplate(
