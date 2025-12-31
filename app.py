@@ -55,7 +55,7 @@ if not st.session_state['analysis_done'] and not analyze_submitted:
     st.info("👈 좌측 사이드바에 기업 정보를 입력하고 '솔루션 생성' 버튼을 눌러주세요.")
     
     # Dashboard Overview (Dummy Stats for Visual)
-    st.markdown("### 📊 실시간 AI 솔루션 데이터베이스 현황")
+    st.markdown("### 실시간 AI 솔루션 데이터베이스 현황")
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
