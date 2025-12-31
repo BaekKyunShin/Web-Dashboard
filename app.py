@@ -15,22 +15,22 @@ load_css('assets/css/style.css')
 
 # --- SIDEBAR (Dark Theme) ---
 with st.sidebar:
-    st.markdown("#### 기업 프로필")
-    company_name = st.text_input("기업명 (Company Name)", placeholder="예: (주)테크코퍼레이션")
-    industry = st.selectbox("산업군 (Industry)", ["금융 (Finance)", "헬스케어 (Healthcare)", "유통/커머스 (Retail)", "제조 (Manufacturing)", "IT/테크 (IT/Tech)", "교육 (Education)", "기타 서비스"])
-    company_size = st.select_slider("기업 규모 (Size)", options=["스타트업 (<50명)", "중소기업 (50-200명)", "중견기업 (200-1000명)", "대기업 (1000명+)"])
-    
-    
-    st.markdown("#### 페인 포인트 (Pain Points)")
-    st.info("현재 겪고 있는 업무상 어려움이나 AI로 해결하고 싶은 과제를 구체적으로 적어주세요.")
-    pain_point = st.text_area(
-        "Pain Points Input", 
-        height=150, 
-        placeholder="예시: 고객 센터의 단순 반복 문의가 너무 많아서 상담원 업무 효율이 떨어집니다. 24시간 자동 응대 시스템을 도입하고 싶지만, 우리 회사 데이터 보안이 걱정됩니다.",
-        label_visibility="collapsed"
-    )
-    
-    analyze_btn = st.button("AI 솔루션 & 로드맵 생성", type="primary", use_container_width=True)
+    with st.form("analysis_form"):
+        st.markdown("#### 기업 프로필")
+        company_name = st.text_input("기업명 (Company Name)", placeholder="예: (주)테크코퍼레이션")
+        industry = st.selectbox("산업군 (Industry)", ["금융 (Finance)", "헬스케어 (Healthcare)", "유통/커머스 (Retail)", "제조 (Manufacturing)", "IT/테크 (IT/Tech)", "교육 (Education)", "기타 서비스"])
+        company_size = st.select_slider("기업 규모 (Size)", options=["스타트업 (<50명)", "중소기업 (50-200명)", "중견기업 (200-1000명)", "대기업 (1000명+)"])
+        
+        st.markdown("#### 페인 포인트 (Pain Points)")
+        st.info("현재 겪고 있는 업무상 어려움이나 AI로 해결하고 싶은 과제를 구체적으로 적어주세요.")
+        pain_point = st.text_area(
+            "Pain Points Input", 
+            height=150, 
+            placeholder="예시: 고객 센터의 단순 반복 문의가 너무 많아서 상담원 업무 효율이 떨어집니다. 24시간 자동 응대 시스템을 도입하고 싶지만, 우리 회사 데이터 보안이 걱정됩니다.",
+            label_visibility="collapsed"
+        )
+        
+        analyze_submitted = st.form_submit_button("AI 솔루션 & 로드맵 생성", type="primary", use_container_width=True)
     
     st.markdown("---")
     st.caption("Powered by GPT-4o & Streamlit\nVer 1.1.0 Platinum KR")
@@ -40,7 +40,17 @@ with st.sidebar:
 st.markdown("<div style='margin-bottom: 0px;'></div>", unsafe_allow_html=True) 
 display_header("KPC 기업 맞춤형 AX 인사이트 (Insight)", "AS-IS 정밀 진단부터 TO-BE 실행 로드맵까지, 원스톱 솔루션")
 
-if not analyze_btn:
+# --- Session State Initialization ---
+if 'analysis_done' not in st.session_state:
+    st.session_state['analysis_done'] = False
+if 'diagnosis_result' not in st.session_state:
+    st.session_state['diagnosis_result'] = None
+if 'recommended_tools' not in st.session_state:
+    st.session_state['recommended_tools'] = []
+if 'roadmap_markdown' not in st.session_state:
+    st.session_state['roadmap_markdown'] = ""
+
+if not st.session_state['analysis_done'] and not analyze_submitted:
     # Initial State (Empty State)
     st.info("👈 좌측 사이드바에 기업 정보를 입력하고 '솔루션 생성' 버튼을 눌러주세요.")
     
@@ -97,45 +107,55 @@ if not analyze_btn:
         st.error("데이터베이스 파일을 찾을 수 없습니다.")
 
 else:
-    # --- Step 3: Agent Execution Logic ---
-    from src.modules.llm_logic import run_diagnosis_agent, find_matching_solutions, generate_roadmap
-    import time
-    
-    # Loading Overlay Injection
-    loading_placeholder = st.empty()
-    loading_placeholder.markdown("""
-        <div class='loading-overlay'>
-            <div class='spinner'></div>
-            <div class='loading-text'>AI 솔루션 및 로드맵 생성 중...</div>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    # 1. Diagnosis Section
-    # Check API Key
-    if "OPENAI_API_KEY" not in st.secrets:
+    # --- Step 3: Agent Execution Logic (Triggered by Form Submit) ---
+    if analyze_submitted:
+        from src.modules.llm_logic import run_diagnosis_agent, find_matching_solutions, generate_roadmap
+        
+        # Loading Overlay Injection
+        loading_placeholder = st.empty()
+        loading_placeholder.markdown("""
+            <div class='loading-overlay'>
+                <div class='spinner'></div>
+                <div class='loading-text'>AI 솔루션 및 로드맵 생성 중...</div>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # 1. Diagnosis Section
+        # Check API Key
+        if "OPENAI_API_KEY" not in st.secrets:
+            loading_placeholder.empty()
+            st.error("🚨 OpenAI API Key가 설정되지 않았습니다. .streamlit/secrets.toml 파일을 확인해주세요.")
+            st.stop()
+            
+        diagnosis_result = run_diagnosis_agent(industry, company_size, pain_point)
+        st.session_state['diagnosis_result'] = diagnosis_result
+        
+        # 2. Matching Solutions
+        try:
+            df = pd.read_csv("data/tools_db.csv")
+            recommended_tools = find_matching_solutions(df, diagnosis_result.key_keywords if diagnosis_result else [])
+        except Exception as e:
+            recommended_tools = []
+        st.session_state['recommended_tools'] = recommended_tools
+            
+        # 3. Roadmap Generation
+        if recommended_tools:
+            roadmap_markdown = generate_roadmap(industry, pain_point, recommended_tools)
+        else:
+            roadmap_markdown = ""
+        st.session_state['roadmap_markdown'] = roadmap_markdown
+            
+        # --- PROCESSING COMPLETE: REMOVE OVERLAY ---
         loading_placeholder.empty()
-        st.error("🚨 OpenAI API Key가 설정되지 않았습니다. .streamlit/secrets.toml 파일을 확인해주세요.")
-        st.stop()
         
-    diagnosis_result = run_diagnosis_agent(industry, company_size, pain_point)
-    
-    # 2. Matching Solutions
-    try:
-        df = pd.read_csv("data/tools_db.csv")
-        recommended_tools = find_matching_solutions(df, diagnosis_result.key_keywords if diagnosis_result else [])
-    except Exception as e:
-        recommended_tools = []
+        # Set Flag
+        st.session_state['analysis_done'] = True
         
-    # 3. Roadmap Generation
-    if recommended_tools:
-        roadmap_markdown = generate_roadmap(industry, pain_point, recommended_tools)
-    else:
-        roadmap_markdown = ""
-        
-    # --- PROCESSING COMPLETE: REMOVE OVERLAY ---
-    loading_placeholder.empty()
-    
-    # --- RENDER RESULTS ---
+    # --- RENDER RESULTS (From Session State) ---
+    if st.session_state['analysis_done']:
+        diagnosis_result = st.session_state['diagnosis_result']
+        recommended_tools = st.session_state['recommended_tools']
+        roadmap_markdown = st.session_state['roadmap_markdown']
     
     # [1] Diagnosis
     st.markdown("<div class='section-subheader'>1. 기업 AI 도입 역량 진단 (Diagnosis)</div>", unsafe_allow_html=True)
