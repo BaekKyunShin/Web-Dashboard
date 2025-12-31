@@ -129,6 +129,7 @@ ul[data-testid="stSelectboxVirtualDropdown"] li {
 
 .stButton>button[kind="primary"] p {
     color: #FFFFFF !important;
+    font-weight: 700;
 }
 
 /* Secondary Button */
@@ -253,7 +254,9 @@ div[data-testid="stVerticalBlock"]>div {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(255, 255, 255, 0.8);
+    width: 100vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.7);
     z-index: 90;
     display: flex;
     justify-content: center;

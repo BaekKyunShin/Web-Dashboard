@@ -45,7 +45,12 @@ with st.sidebar:
             label_visibility="collapsed"
         )
         
-        analyze_submitted = st.form_submit_button("AI 솔루션 & 로드맵 생성", type="primary", use_container_width=True)
+        # Callback to handle form submission reliably
+        def on_analyze_submit():
+            st.session_state['analysis_done'] = False
+            st.session_state['trigger_analysis'] = True
+
+        analyze_submitted = st.form_submit_button("AI 솔루션 & 로드맵 생성", type="primary", use_container_width=True, on_click=on_analyze_submit)
     
     st.markdown("---")
     st.caption("Powered by GPT-4o & Streamlit\nVer 1.1.0 Platinum KR")
@@ -58,6 +63,8 @@ display_header("KPC 기업 맞춤형 AX 인사이트 (Insight)", "AS-IS 정밀 �
 # --- Session State Initialization ---
 if 'analysis_done' not in st.session_state:
     st.session_state['analysis_done'] = False
+if 'trigger_analysis' not in st.session_state:
+    st.session_state['trigger_analysis'] = False
 if 'diagnosis_result' not in st.session_state:
     st.session_state['diagnosis_result'] = None
 if 'recommended_tools' not in st.session_state:
@@ -65,7 +72,7 @@ if 'recommended_tools' not in st.session_state:
 if 'roadmap_markdown' not in st.session_state:
     st.session_state['roadmap_markdown'] = ""
 
-if not st.session_state['analysis_done'] and not analyze_submitted:
+if not st.session_state['analysis_done'] and not st.session_state['trigger_analysis']:
     # Initial State (Empty State)
     st.info("👈 좌측 사이드바에 기업 정보를 입력하고 '솔루션 생성' 버튼을 눌러주세요.")
     
@@ -123,7 +130,9 @@ if not st.session_state['analysis_done'] and not analyze_submitted:
 
 else:
     # --- Step 3: Agent Execution Logic (Triggered by Form Submit) ---
-    if analyze_submitted:
+    if st.session_state['trigger_analysis']:
+        # Reset Trigger immediately to prevent re-runs without click
+        st.session_state['trigger_analysis'] = False
         from src.modules.llm_logic import run_diagnosis_agent, find_matching_solutions, generate_roadmap
         
         # Loading Overlay Injection
