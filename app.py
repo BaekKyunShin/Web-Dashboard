@@ -151,20 +151,44 @@ else:
     
     if recommended_tools:
         # Layout: Grid of 2 columns x 2 rows (since we output 4 items)
-        # Using st.columns(2) inside a loop if more items, but we fixed it to 4.
-        # Let's use st.columns(2) for better visibility on mobile/tablet than 4.
         
+        # Benefit Text Generator (Simple Rule-based for Visual Demo)
+        def get_benefit_text(category):
+            cat = category.lower()
+            if "마케팅" in cat: return "콘텐츠 생성 시간 단축 및 품질 향상 기대 (효율 +40%)"
+            if "영업" in cat: return "고객 데이터 분석을 통한 영업 기회 포착 및 매출 증대"
+            if "생산성" in cat or "업무" in cat: return "반복 업무 자동화를 통해 업무 처리 속도 2배 향상"
+            if "분석" in cat: return "데이터 기반 의사결정으로 비즈니스 인사이트 도출 가속화"
+            if "디자인" in cat: return "창의적 디자인 시안 생성 시간 90% 단축"
+            if "개발" in cat: return "코드 자동 생성 및 디버깅 지원으로 개발 생산성 향상"
+            return "AI 도입을 통해 기존 업무 방식의 혁신적인 효율화 기대"
+
         rows = [recommended_tools[i:i + 2] for i in range(0, len(recommended_tools), 2)]
         for row_tools in rows:
             cols = st.columns(2)
             for col, tool in zip(cols, row_tools):
                 with col:
-                    with card_container():
-                        st.markdown(f"#### 🏆 {tool['Tool Name']}")
-                        st.caption(f"Category: {tool['Category']}")
-                        st.markdown(f"**{tool['Description']}**")
-                        st.markdown(f"비용 모델: {tool['Pricing Model']}")
-                        st.progress(tool.get('match_score', 0)/5.0, text=f"매칭 적합도: {tool.get('match_score', 0)}점")
+                    # Custom HTML Card
+                    benefit_text = get_benefit_text(tool['Category'])
+                    st.markdown(f"""
+                    <div class="solution-card">
+                        <div class="solution-header">
+                            <span class="solution-icon">🛠️</span>
+                            <h3 class="solution-title">{tool['Tool Name']}</h3>
+                        </div>
+                        <span class="solution-badge">{tool['Category']}</span>
+                        
+                        <div class="solution-section-label">추천 이유:</div>
+                        <div class="solution-description">
+                            {tool['Description']}
+                        </div>
+                        
+                        <div class="solution-benefit-box">
+                            <span class="benefit-icon">📈</span>
+                            <span>{benefit_text}</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
     # [3] Roadmap
     st.markdown("<div class='section-subheader'>3. 단계별 도입 및 교육 로드맵 (Action Plan)</div>", unsafe_allow_html=True)
