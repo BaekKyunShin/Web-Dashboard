@@ -95,8 +95,8 @@ def find_matching_solutions(df, keywords: List[str]):
 
     df['match_score'] = df.apply(calculate_score, axis=1)
     
-    # Sort by score and return top 4
-    top_results = df.sort_values(by='match_score', ascending=False).head(4)
+    # Sort by score and return top 3
+    top_results = df.sort_values(by='match_score', ascending=False).head(3)
     
     # Convert to list of dicts for easier consumption
     return top_results.to_dict('records')

@@ -150,9 +150,9 @@ else:
     st.markdown("<div class='section-subheader'>2. 맞춤형 솔루션 추천 (Best Fit Solutions)</div>", unsafe_allow_html=True)
     
     if recommended_tools:
-        # Layout: Grid of 2 columns x 2 rows (since we output 4 items)
+        # Layout: Grid of 3 columns (User requested 3 items)
         
-        # Benefit Text Generator (Simple Rule-based for Visual Demo)
+        # Benefit Text Generator
         def get_benefit_text(category):
             cat = category.lower()
             if "마케팅" in cat: return "콘텐츠 생성 시간 단축 및 품질 향상 기대 (효율 +40%)"
@@ -163,32 +163,30 @@ else:
             if "개발" in cat: return "코드 자동 생성 및 디버깅 지원으로 개발 생산성 향상"
             return "AI 도입을 통해 기존 업무 방식의 혁신적인 효율화 기대"
 
-        rows = [recommended_tools[i:i + 2] for i in range(0, len(recommended_tools), 2)]
-        for row_tools in rows:
-            cols = st.columns(2)
-            for col, tool in zip(cols, row_tools):
-                with col:
-                    # Custom HTML Card
-                    benefit_text = get_benefit_text(tool['Category'])
-                    st.markdown(f"""
-                    <div class="solution-card">
-                        <div class="solution-header">
-                            <span class="solution-icon">🛠️</span>
-                            <h3 class="solution-title">{tool['Tool Name']}</h3>
-                        </div>
-                        <span class="solution-badge">{tool['Category']}</span>
-                        
-                        <div class="solution-section-label">추천 이유:</div>
-                        <div class="solution-description">
-                            {tool['Description']}
-                        </div>
-                        
-                        <div class="solution-benefit-box">
-                            <span class="benefit-icon">📈</span>
-                            <span>{benefit_text}</span>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+        # Use columns(3) for 3 items
+        cols = st.columns(3)
+        for i, tool in enumerate(recommended_tools):
+            with cols[i]:
+                benefit_text = get_benefit_text(tool['Category'])
+                # IMPORTANT: No indentation inside the HTML string to prevent Markdown code block interpretation
+                html_content = f"""
+<div class="solution-card">
+    <div class="solution-header">
+        <h3 class="solution-title">{tool['Tool Name']}</h3>
+    </div>
+    <span class="solution-badge">{tool['Category']}</span>
+    
+    <div class="solution-section-label">추천 이유:</div>
+    <div class="solution-description">
+        {tool['Description']}
+    </div>
+    
+    <div class="solution-benefit-box">
+        <span>{benefit_text}</span>
+    </div>
+</div>
+"""
+                st.markdown(html_content, unsafe_allow_html=True)
 
     # [3] Roadmap
     st.markdown("<div class='section-subheader'>3. 단계별 도입 및 교육 로드맵 (Action Plan)</div>", unsafe_allow_html=True)
