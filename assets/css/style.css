@@ -304,7 +304,13 @@ div[data-testid="stVerticalBlock"]>div {
 }
 
 /* Roadmap Improvements */
-border-radius: 0 8px 8px 0;
+.roadmap-phase {
+    border-left: 4px solid #3B82F6;
+    padding-left: 16px;
+    margin-bottom: 24px;
+    background-color: #F8FAFC;
+    padding: 16px;
+    border-radius: 0 8px 8px 0;
 }
 
 /* Solution Card Improvements (Blue Border Design) */
