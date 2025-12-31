@@ -55,7 +55,7 @@ with st.sidebar:
 # --- MAIN CONTENT ---
 # Compact Header
 st.markdown("<div style='margin-bottom: 0px;'></div>", unsafe_allow_html=True) 
-display_header("KPC 기업 맞춤형 AX 인사이트 (Insight)", "AS-IS 정밀 진단부터 TO-BE 실행 로드맵까지, 원스톱 솔루션")
+display_header("KPC 기업 맞춤형 AX 인사이트 (Insight)")
 
 # --- Session State Initialization ---
 if 'analysis_done' not in st.session_state:
@@ -70,10 +70,10 @@ if 'roadmap_markdown' not in st.session_state:
 
 if not st.session_state['analysis_done'] and not analyze_submitted:
     # Initial State (Empty State)
-    st.info("👈 좌측 사이드바에 기업 정보를 입력하고 '솔루션 생성' 버튼을 눌러주세요.")
+    st.info("AS-IS 정밀 진단부터 TO-BE 실행 로드맵까지, 원스톱 솔루션")
     
     # Dashboard Overview (Dummy Stats for Visual)
-    st.markdown("### 실시간 AI 솔루션 데이터베이스 현황")
+    st.markdown("<div class='section-subheader'>AI 솔루션 도입 효율성 및 기대 효과</div>", unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
@@ -127,11 +127,7 @@ if not st.session_state['analysis_done'] and not analyze_submitted:
 else:
     # --- Step 3: Agent Execution Logic (Triggered by Form Submit) ---
     if analyze_submitted:
-        # Reset previous state for fresh run
-        st.session_state['analysis_done'] = False
-        
         from src.modules.llm_logic import run_diagnosis_agent, find_matching_solutions, generate_roadmap
-        import textwrap
         
         # Loading Overlay Injection
         loading_placeholder = st.empty()
@@ -186,7 +182,7 @@ else:
     
     if diagnosis_result:
         with card_container():
-            st.markdown(f"#### 🩺 진단 요약 (Urgency: {diagnosis_result.urgency})")
+            st.markdown("#### 진단 요약")
             st.info(f"**핵심 문제**: {diagnosis_result.problem_summary}")
             st.write(f"**추출된 키워드**: {', '.join(diagnosis_result.key_keywords)}")
     
@@ -196,86 +192,83 @@ else:
     if recommended_tools:
         # Layout: Grid of 3 columns (User requested 3 items)
         
-        # Benefit Text Generator (Matched with Reference Image Style)
+        # Tool Introduction (What is this tool?)
+        def get_tool_intro(tool_name):
+            tool = tool_name.lower()
+            if "zapier" in tool: return "5,000개 이상의 앱을 연결하는 노코드 자동화 플랫폼입니다. 코딩 없이 다양한 서비스 간 데이터 흐름을 자동화하여 반복 업무를 제거합니다."
+            if "notion" in tool: return "AI 기반 올인원 협업 및 문서 관리 도구입니다. 프로젝트 관리, 위키, 데이터베이스를 하나의 워크스페이스에서 통합 관리할 수 있습니다."
+            if "fireflies" in tool: return "AI 회의 녹음 및 자동 요약 서비스입니다. 화상회의를 자동 녹취하고, 핵심 액션 아이템과 결정사항을 추출해 공유합니다."
+            if "chatgpt" in tool: return "OpenAI의 기업용 대화형 AI 솔루션입니다. SSO, 데이터 보안, 관리자 콘솔 등 엔터프라이즈급 기능을 제공합니다."
+            if "jasper" in tool: return "AI 기반 마케팅 콘텐츠 생성 플랫폼입니다. 블로그, 소셜미디어, 광고 카피 등 다양한 마케팅 콘텐츠를 브랜드 톤에 맞게 생성합니다."
+            if "midjourney" in tool: return "프롬프트 기반 고품질 AI 이미지 생성 도구입니다. 마케팅 소재, 제품 컨셉 이미지, 프레젠테이션 비주얼을 빠르게 제작할 수 있습니다."
+            if "copy.ai" in tool: return "AI 카피라이팅 및 콘텐츠 자동 생성 도구입니다. 광고 문구, 이메일, 블로그 등 다양한 형식의 텍스트를 자동 생성합니다."
+            if "otter" in tool: return "실시간 음성 인식 및 회의록 자동화 서비스입니다. 회의 내용을 실시간으로 텍스트로 변환하고 검색 가능한 형태로 저장합니다."
+            if "grammarly" in tool: return "AI 기반 영문 교정 및 작문 보조 도구입니다. 문법 오류 수정부터 톤 조절, 명확성 개선까지 전문적인 영문 작성을 지원합니다."
+            if "tableau" in tool: return "인터랙티브 데이터 시각화 및 분석 플랫폼입니다. 대량의 데이터를 직관적인 대시보드와 차트로 변환하여 인사이트를 도출합니다."
+            if "power bi" in tool: return "Microsoft의 비즈니스 인텔리전스 도구입니다. Excel, Azure 등 MS 생태계와 완벽하게 통합되어 데이터 분석을 지원합니다."
+            if "salesforce" in tool: return "AI 탑재 CRM 및 영업 자동화 플랫폼입니다. 고객 관계 관리부터 영업 예측, 마케팅 자동화까지 통합 솔루션을 제공합니다."
+            return "AI 기반 업무 효율화 솔루션으로, 기존 워크플로우에 쉽게 통합하여 생산성을 높일 수 있습니다."
+        
+        # Recommendation Reason (2-3 lines, more detailed)
+        def get_recommendation_reason(tool_name, category):
+            tool = tool_name.lower()
+            cat = category.lower()
+            if "zapier" in tool: return "귀사의 반복적인 수작업 프로세스를 자동화하여 인적 오류를 줄이고 업무 효율을 극대화할 수 있습니다. 다양한 툴 간 데이터 연동으로 사일로 현상을 해결합니다."
+            if "notion" in tool: return "분산된 팀 협업 도구를 하나로 통합하여 정보 검색 시간을 단축하고 지식 공유를 활성화합니다. AI Q&A 기능으로 문서 내 정보를 즉시 찾을 수 있습니다."
+            if "fireflies" in tool: return "회의록 작성에 소요되는 시간을 제거하고, 중요 결정사항과 액션 아이템을 자동 추출합니다. 팀원 간 정보 공유 속도가 크게 향상됩니다."
+            if "chatgpt" in tool: return "임직원들이 업무 중 발생하는 질문에 즉시 답변을 받고, 문서 초안 작성, 데이터 분석 등 다양한 태스크를 AI로 가속화할 수 있습니다."
+            if "jasper" in tool: return "마케팅팀의 콘텐츠 생산 속도를 획기적으로 높이고, 일관된 브랜드 보이스를 유지하면서 다양한 채널용 콘텐츠를 생성할 수 있습니다."
+            if "midjourney" in tool: return "디자이너 리소스 없이도 고품질 시각 자료를 빠르게 생성하여 마케팅 및 제안서 작성 시간을 단축합니다. 아이데이션 단계에서 특히 유용합니다."
+            # Fallback based on category
+            if "마케팅" in cat: return "마케팅 콘텐츠 생성과 캠페인 운영을 자동화하여 팀의 창의적 업무에 집중할 시간을 확보합니다. ROI 측정과 최적화도 지원합니다."
+            if "영업" in cat: return "고객 데이터를 체계적으로 관리하고 영업 파이프라인을 시각화하여 성사율을 높입니다. AI 기반 고객 인사이트도 제공합니다."
+            if "생산성" in cat or "자동화" in cat: return "반복적인 수작업을 자동화하여 직원들이 고부가가치 업무에 집중할 수 있게 합니다. 평균 30% 이상의 시간 절감 효과가 있습니다."
+            if "분석" in cat: return "복잡한 데이터를 직관적으로 시각화하여 빠른 의사결정을 지원합니다. 실시간 대시보드로 핵심 KPI를 모니터링할 수 있습니다."
+            return "AI 기술을 활용하여 기존 업무 방식을 혁신하고 전반적인 생산성과 품질을 향상시킬 수 있습니다."
+        
+        # Benefit Text (Expected outcome)
         def get_benefit_text(tool_name, category):
             tool = tool_name.lower()
             cat = category.lower()
-            
-            # Specific Data Mapping for Demo/Visual consistency
-            if "zapier" in tool: return "업무 프로세스 자동화를 통해 수작업 시간을 최소화하고, 30% 이상의 업무 효율성을 기대할 수 있습니다."
-            if "notion" in tool: return "프로젝트 문서화 및 팀 협업 개선을 통해 작업 혼란을 40% 이상 감소시킬 수 있습니다."
-            if "fireflies" in tool: return "자동화된 회의록과 요약 기능으로 정보 전달 시간을 50% 이상 줄일 수 있습니다."
-            if "chatgpt" in tool: return "엔터프라이즈급 보안 환경에서 임직원의 업무 질문 및 문서 초안 작성을 즉각 지원합니다."
-            if "jasper" in tool: return "브랜드 보이스에 맞는 고품질 마케팅 콘텐츠를 10배 빠르게 제작할 수 있습니다."
-            if "midjourney" in tool: return "생성형 AI 디자인 프로세스를 도입하여 시안 제작 비용을 획기적으로 절감할 수 있습니다."
-            
-            # Fallback based on category
-            if "마케팅" in cat: return "마케팅 캠페인 자동화 및 콘텐츠 생성 효율을 40% 이상 높일 수 있습니다."
-            if "영업" in cat: return "고객 데이터 분석을 통한 잠재 고객 발굴 및 계약 성사율 증대가 기대됩니다."
-            if "생산성" in cat or "자동화" in cat: return "반복 업무 자동화를 통해 수작업 시간을 최소화하고 업무 효율성을 극대화합니다."
-            if "분석" in cat: return "데이터 기반의 신속한 의사결정으로 비즈니스 인사이트 도출 시간을 단축합니다."
-            return "AI 도입을 통해 기존 업무 방식의 혁신적인 효율화와 생산성 향상을 기대할 수 있습니다."
+            if "zapier" in tool: return "예상 효과: 수작업 시간 30% 이상 절감"
+            if "notion" in tool: return "예상 효과: 팀 협업 효율 40% 향상"
+            if "fireflies" in tool: return "예상 효과: 회의록 작성 시간 50% 단축"
+            if "chatgpt" in tool: return "예상 효과: 문서 초안 작성 시간 60% 절감"
+            if "jasper" in tool: return "예상 효과: 콘텐츠 생산 속도 10배 향상"
+            if "midjourney" in tool: return "예상 효과: 디자인 시안 비용 70% 절감"
+            # Fallback
+            if "마케팅" in cat: return "예상 효과: 콘텐츠 생성 효율 40% 향상"
+            if "영업" in cat: return "예상 효과: 영업 생산성 35% 향상"
+            if "생산성" in cat or "자동화" in cat: return "예상 효과: 업무 효율 30% 이상 향상"
+            return "예상 효과: 업무 생산성 향상"
 
         # Use columns(3) for 3 items
         cols = st.columns(3)
         for i, tool in enumerate(recommended_tools):
             with cols[i]:
+                tool_intro = get_tool_intro(tool['Tool Name'])
+                rec_reason = get_recommendation_reason(tool['Tool Name'], tool['Category'])
                 benefit_text = get_benefit_text(tool['Tool Name'], tool['Category'])
-                # IMPORTANT: No indentation inside the HTML string to prevent Markdown code block interpretation
-                # Using textwrap.dedent to safely handle indentation in code but output raw HTML string
-                html_content = textwrap.dedent(f"""
-                    <div class="solution-card">
-                        <div class="solution-header">
-                            <h3 class="solution-title">{tool['Tool Name']}</h3>
-                        </div>
-                        <span class="solution-badge">{tool['Category']}</span>
-                        
-                        <div class="solution-section-label">추천 이유:</div>
-                        <div class="solution-description">
-                            {tool['Description']}
-                        </div>
-                        
-                        <div class="solution-benefit-box">
-                            <span>{benefit_text}</span>
-                        </div>
-                    </div>
-                """)
+                html_content = f'''<div class="solution-card">
+<div class="solution-header">
+<h3 class="solution-title">{tool['Tool Name']}</h3>
+</div>
+<span class="solution-badge">{tool['Category']}</span>
+<div class="solution-intro">{tool_intro}</div>
+<div class="solution-section-label">추천 이유</div>
+<div class="solution-description">{rec_reason}</div>
+<div class="solution-benefit-box">
+<span>{benefit_text}</span>
+</div>
+</div>'''
                 st.markdown(html_content, unsafe_allow_html=True)
 
-    # [3] Roadmap
-    st.markdown("<div class='section-subheader'>3. 단계별 도입 및 교육 로드맵 (Action Plan)</div>", unsafe_allow_html=True)
+    # [3] Curriculum
+    st.markdown("<div class='section-subheader'>3. 교육 커리큘럼 (Curriculum)</div>", unsafe_allow_html=True)
     
     if roadmap_markdown:
-        # Simple splitting by headers for UI
-        # Roadmap is Markdown. Let's just render it nicely or split.
-        # Splitting by '## '
-        sections = roadmap_markdown.split('## ')
-        
-        # Section 0 is usually introductory empty or title.
-        # Section 1: Strategy
-        # Section 2: Action Plan
-        # Section 3: Budget
-        
-        for section in sections:
-            if not section.strip(): continue
-            
-            lines = section.split('\n')
-            header = lines[0].strip()
-            content = "\n".join(lines[1:])
-            
-            if "도입 전략" in header or "Strategy" in header:
-                with st.container():
-                     st.markdown(f"### {header}")
-                     st.markdown(content)
-            elif "실행 계획" in header or "Action Plan" in header:
-                with st.expander(f"📌 {header} (클릭하여 상세 보기)", expanded=True):
-                    st.markdown(content)
-            elif "예산" in header or "ROI" in header or "커리큘럼" in header or "Curriculum" in header:
-                with st.container():
-                    st.markdown(f"### {header}")
-                    st.markdown(content)
-            else:
-                # Fallback
-                st.markdown(f"## {section}")
+        # LLM now generates only the table directly, just clean and render
+        cleaned_content = roadmap_markdown.replace("```markdown", "").replace("```", "").strip()
+        st.markdown(cleaned_content)
     else:
-         st.warning("추천된 솔루션이 없어 로드맵을 생성할 수 없습니다.")
+         st.warning("추천된 솔루션이 없어 커리큘럼을 생성할 수 없습니다.")

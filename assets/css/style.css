@@ -130,6 +130,18 @@ ul[data-testid="stSelectboxVirtualDropdown"] li {
 .stButton>button[kind="primary"] p {
     color: #FFFFFF !important;
     font-weight: 700;
+    margin: 0 !important;
+    line-height: 1 !important;
+}
+
+/* Sidebar Primary Button - Force White Text (Override dark sidebar text rules) */
+[data-testid="stSidebar"] .stButton>button[kind="primary"],
+[data-testid="stSidebar"] .stButton>button[kind="primary"] *,
+[data-testid="stSidebar"] .stFormSubmitButton>button,
+[data-testid="stSidebar"] .stFormSubmitButton>button *,
+[data-testid="stSidebar"] button[kind="primary"],
+[data-testid="stSidebar"] button[kind="primary"] * {
+    color: #FFFFFF !important;
 }
 
 /* Secondary Button */
@@ -191,7 +203,16 @@ ul[data-testid="stSelectboxVirtualDropdown"] li {
 [data-testid="stSidebar"] {
     background-color: #F8FAFC;
     border-right: 1px solid #E2E8F0;
-    padding-top: 1rem !important;
+    padding-top: 0 !important;
+}
+
+[data-testid="stSidebar"]>div:first-child {
+    padding-top: 0.0rem !important;
+}
+
+[data-testid="stSidebar"] .block-container,
+[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+    padding-top: 0.0rem !important;
 }
 
 /* Reduce Streamlit's default large gaps between elements */
@@ -203,10 +224,10 @@ div[data-testid="stVerticalBlock"]>div {
 
 /* Custom Headers - Compact & Balanced */
 .section-header {
-    color: #0F172A;
+    color: #13286e !important;
     font-weight: 800;
-    font-size: 2.0rem;
-    margin-bottom: 0.3rem !important;
+    font-size: 2.4rem !important;
+    margin-bottom: 0.35rem !important;
     /* Tight margin */
     letter-spacing: -0.03em;
     line-height: 1.2;
@@ -215,7 +236,7 @@ div[data-testid="stVerticalBlock"]>div {
 .section-subheader {
     color: #1E293B;
     font-weight: 700;
-    font-size: 1.15rem;
+    font-size: 1.3rem;
     margin-top: 1.0rem !important;
     /* Reduced top margin */
     margin-bottom: 0.5rem !important;
@@ -256,13 +277,13 @@ div[data-testid="stVerticalBlock"]>div {
     width: calc(100vw - 20rem);
     /* Remaining width */
     height: 100vh;
-    background: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.4);
     z-index: 90;
     display: flex;
     justify-content: center;
     align-items: center;
     flex-direction: column;
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(4px);
 }
 
 .spinner {
@@ -363,7 +384,16 @@ div[data-testid="stVerticalBlock"]>div {
     border-radius: 999px;
     font-size: 0.8rem;
     font-weight: 600;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
+}
+
+.solution-intro {
+    font-size: 0.95rem;
+    color: #64748B;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #E2E8F0;
+    line-height: 1.5;
 }
 
 .solution-section-label {

@@ -25,8 +25,8 @@ def get_llm():
 
 # --- 1. Diagnosis Agent ---
 class DiagnosisOutput(BaseModel):
-    problem_summary: str = Field(description="Summary of the company's pain points in 1 sentence.")
-    key_keywords: List[str] = Field(description="List of 3-5 technical keywords related to AI solutions for these pain points.")
+    problem_summary: str = Field(description="Detailed analysis of the company's core problem in 2-3 sentences, including root cause and business impact.")
+    key_keywords: List[str] = Field(description="List of 5-7 technical keywords related to AI solutions for these pain points.")
     urgency: str = Field(description="Urgency level: 'High', 'Medium', or 'Low'.")
 
 @st.cache_data(show_spinner=False)
@@ -38,7 +38,7 @@ def run_diagnosis_agent(industry, company_size, pain_points):
 
     prompt = PromptTemplate(
         template="""
-        You are an Enterprise AI Architect. Analyze the following company profile and pain points.
+        You are an Enterprise AI Architect with 15+ years of experience. Analyze the following company profile and pain points in depth.
         
         Company Profile:
         - Industry: {industry}
@@ -48,9 +48,15 @@ def run_diagnosis_agent(industry, company_size, pain_points):
         {pain_points}
         
         Your Goal:
-        1. Summarize the core bottleneck in ONE sentence using the exact format: "귀사의 가장 큰 병목 구간은 [Problem Summary]입니다."
-        2. Identify 3-5 key technical keywords (e.g., 'NLP', 'Chatbot', 'Predictive Maintenance', 'RAG') that would solve these problems.
-        3. Determine the urgency of AI adoption.
+        1. Provide a DETAILED problem analysis in Korean (2-3 sentences):
+           - Identify the ROOT CAUSE of the problem (not just restate the symptom)
+           - Explain the BUSINESS IMPACT (productivity loss, cost increase, customer satisfaction decline, etc.)
+           - Suggest the TYPE of AI solution needed (automation, analytics, AI assistant, etc.)
+           Format: "귀사의 핵심 문제는 [root cause]로 인한 [specific problem]입니다. 이로 인해 [business impact]가 발생하고 있으며, [AI solution type]을 통해 해결할 수 있습니다."
+        
+        2. Identify 5-7 specific technical keywords (e.g., 'NLP', 'Chatbot', 'RPA', 'RAG', 'Predictive Analytics', 'Computer Vision', 'Workflow Automation')
+        
+        3. Determine the urgency based on business impact severity.
         
         {format_instructions}
         """,
@@ -113,30 +119,28 @@ def generate_roadmap(industry, pain_points, recommended_tools):
 
     prompt = PromptTemplate(
         template="""
-        As a Senior AI Consultant, generate a structured implementation roadmap for the client.
+        As a Senior AI Consultant with extensive corporate training experience, generate a comprehensive education curriculum for the client's AI adoption.
         
         Context:
-        - Scalability: {industry}
+        - Industry: {industry}
         - Problem: {pain_points}
         
         Recommended Solutions:
         {tools_str}
         
-        Generate a structured Markdown report in Korean. Use the following exact headers and format:
+        Generate ONLY a Markdown table in Korean for the education curriculum.
+        Use exactly these columns: [단계 | 교육 과정 | 주요 내용 | 시간 | 산출물]
         
-        ## 1. 🚀 도입 전략 (Strategy)
-        Explain why these tools are the best fit.
+        Requirements:
+        - Create exactly 10 rows of curriculum content for a comprehensive training program
+        - 단계 distribution: 초급(3), 중급(4), 고급(3)
+        - Each row must reference specific tool names from the recommended solutions
+        - 교육 과정 should be specific course titles (e.g., "Zapier 기초 자동화 설계", "Notion AI 팀 협업 워크플로우")
+        - 주요 내용 should be detailed and specific (30-50 characters), describing exactly what participants will learn
+        - 시간 should be realistic (4시간, 6시간, 8시간, 10시간, 12시간, 16시간, 20시간)
+        - 산출물 should be specific, tangible deliverables (e.g., "자동화 워크플로우 3개 구축", "팀 협업 템플릿 5종")
         
-        ## 2. 📅 단계별 실행 계획 (Action Plan)
-        - **Phase 1: Pilot (1-3 months)**: What to test?
-        - **Phase 2: Expansion (3-6 months)**: How to scale?
-        - **Phase 3: Transformation (6+ months)**: Long-term value.
-        
-        ## 3. 🎓 임직원 교육 커리큘럼 (Curriculum)
-        Create a markdown table with the columns: [단계 | 교육명 | 주요 내용 | 산출물].
-        Populate the table with at least 3 rows (Introduction, Advanced, Expert).
-        
-        IMPORTANT: Ensure the sections are clearly separated by headers. Do NOT include ```markdown fences.
+        Output ONLY the markdown table, no headers, no introduction, no explanation:
         """,
         input_variables=["industry", "pain_points", "tools_str"]
     )
