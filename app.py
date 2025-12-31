@@ -18,7 +18,22 @@ with st.sidebar:
     with st.form("analysis_form"):
         st.markdown("#### 기업 프로필")
         company_name = st.text_input("기업명 (Company Name)", placeholder="예: (주)테크코퍼레이션")
-        industry = st.selectbox("산업군 (Industry)", ["금융 (Finance)", "헬스케어 (Healthcare)", "유통/커머스 (Retail)", "제조 (Manufacturing)", "IT/테크 (IT/Tech)", "교육 (Education)", "기타 서비스"])
+        industry = st.selectbox("산업군 (Industry)", [
+            "제조 (Manufacturing)", 
+            "IT/소프트웨어 (IT/Software)",
+            "금융/핀테크 (Finance/Fintech)", 
+            "유통/커머스 (Retail/Commerce)", 
+            "헬스케어/바이오 (Healthcare/Bio)", 
+            "물류/운송 (Logistics/Transport)",
+            "건설/부동산 (Construction/Real Estate)",
+            "에너지/화학 (Energy/Chemical)",
+            "미디어/콘텐츠 (Media/Content)",
+            "교육 (Education)", 
+            "공공/행정 (Public/Government)",
+            "관광/레저 (Tourism/Leisure)",
+            "법률/전문서비스 (Legal/Services)",
+            "기타 서비스"
+        ])
         company_size = st.select_slider("기업 규모 (Size)", options=["스타트업 (<50명)", "중소기업 (50-200명)", "중견기업 (200-1000명)", "대기업 (1000명+)"])
         
         st.markdown("#### 페인 포인트 (Pain Points)")
