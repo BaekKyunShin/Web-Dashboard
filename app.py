@@ -71,128 +71,68 @@ if 'recommendation_reasons' not in st.session_state:
     st.session_state['recommendation_reasons'] = []
 
 
-if not st.session_state['analysis_done'] and not analyze_submitted:
-    # Initial State (Empty State)
-    st.info("AS-IS 정밀 진단부터 TO-BE 실행 로드맵까지, 원스톱 솔루션")
+# --- MAIN CONTENT LOGIC ---
+# STEP 1: Handle form submission FIRST (before any rendering)
+if analyze_submitted:
+    from src.modules.llm_logic import run_diagnosis_agent, find_matching_solutions, generate_roadmap, generate_recommendation_reasons
     
-    # Dashboard Overview (Dummy Stats for Visual)
-    st.markdown("<div class='section-subheader'>AI 솔루션 도입 효율성 및 기대 효과</div>", unsafe_allow_html=True)
-    col1, col2, col3, col4 = st.columns(4)
+    # Loading Overlay Injection
+    loading_placeholder = st.empty()
+    loading_placeholder.markdown("""
+        <div class='loading-overlay'>
+            <div class='spinner'></div>
+            <div class='loading-text'>AI 솔루션 및 로드맵 생성 중...</div>
+        </div>
+    """, unsafe_allow_html=True)
     
-    with col1:
-        st.metric(label="등록된 AI 솔루션", value="50+", delta="Live DB")
-    with col2:
-        st.metric(label="매칭 알고리즘", value="GPT-4o", delta="Active")
-    with col3:
-        st.metric(label="평균 도입 기간", value="4.2주", delta="-12% (YoY)")
-    with col4:
-        st.metric(label="예상 업무 효율", value="+35%", delta="업계 평균 상회")
-
-    # Preview of Tools - Height restricted for one-page view (Adjusted)
-    st.markdown("<div class='section-subheader'>사용 가능한 솔루션 리스트 (미리보기)</div>", unsafe_allow_html=True)
+    # Check API Key
+    if "OPENAI_API_KEY" not in st.secrets:
+        loading_placeholder.empty()
+        st.error("🚨 OpenAI API Key가 설정되지 않았습니다. .streamlit/secrets.toml 파일을 확인해주세요.")
+        st.stop()
+        
+    # 1. Diagnosis
+    diagnosis_result = run_diagnosis_agent(industry, company_size, pain_point)
+    st.session_state['diagnosis_result'] = diagnosis_result
+    
+    # 2. Matching Solutions (Semantic Search)
     try:
         df = pd.read_csv("data/tools_db.csv")
-        
-        # UI Tweak: Convert 'Complexity' text to Discrete Visual Bars (Wide & Colored)
-        def get_complexity_bars(level):
-            if level == '하': return "█" 
-            elif level == '중': return "█ █" 
-            elif level == '상': return "█ █ █" 
-            return level
-            
-        df['난이도'] = df['Complexity'].apply(get_complexity_bars)
-        
-        # Select and Reorder columns for display
-        display_df = df[['Tool Name', 'Category', 'Description', 'Pricing Model', '난이도']]
-        
-        # Apply Styling (Blue Color for Complexity)
-        styled_df = display_df.style.applymap(
-            lambda x: 'color: #2563EB; font-weight: bold;', 
-            subset=['난이도']
+        recommended_tools = find_matching_solutions(
+            df, 
+            pain_point,
+            diagnosis_result.key_keywords if diagnosis_result else []
         )
+    except Exception as e:
+        recommended_tools = []
+    st.session_state['recommended_tools'] = recommended_tools
+    
+    # 3. Generate Dynamic Recommendation Reasons
+    if recommended_tools:
+        dynamic_reasons = generate_recommendation_reasons(pain_point, industry, recommended_tools)
+        st.session_state['recommendation_reasons'] = dynamic_reasons
+    else:
+        st.session_state['recommendation_reasons'] = []
         
-        st.dataframe(
-            styled_df, 
-            use_container_width=True, 
-            hide_index=True, 
-            height=350,
-            column_config={
-                "난이도": st.column_config.TextColumn("구축 난이도"),
-                "Pricing Model": st.column_config.TextColumn("가격 모델"),
-                "Tool Name": st.column_config.TextColumn("솔루션명"),
-                "Category": st.column_config.TextColumn("카테고리"),
-                "Description": st.column_config.TextColumn("설명"),
-            }
-        )
-    except FileNotFoundError:
-        st.error("데이터베이스 파일을 찾을 수 없습니다.")
+    # 4. Roadmap Generation
+    if recommended_tools:
+        raw_roadmap = generate_roadmap(industry, pain_point, recommended_tools)
+        cleaned_roadmap = raw_roadmap.replace("```markdown", "").replace("```", "").strip()
+        st.session_state['roadmap_markdown'] = cleaned_roadmap
+    else:
+        st.session_state['roadmap_markdown'] = ""
+        
+    # Processing Complete
+    loading_placeholder.empty()
+    st.session_state['analysis_done'] = True
 
-else:
-    # --- Step 3: Agent Execution Logic (Triggered by Form Submit) ---
-    if analyze_submitted:
-        from src.modules.llm_logic import run_diagnosis_agent, find_matching_solutions, generate_roadmap, generate_recommendation_reasons
-        
-        # Loading Overlay Injection
-        loading_placeholder = st.empty()
-        loading_placeholder.markdown("""
-            <div class='loading-overlay'>
-                <div class='spinner'></div>
-                <div class='loading-text'>AI 솔루션 및 로드맵 생성 중...</div>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # 1. Diagnosis Section
-        # Check API Key
-        if "OPENAI_API_KEY" not in st.secrets:
-            loading_placeholder.empty()
-            st.error("🚨 OpenAI API Key가 설정되지 않았습니다. .streamlit/secrets.toml 파일을 확인해주세요.")
-            st.stop()
-            
-        diagnosis_result = run_diagnosis_agent(industry, company_size, pain_point)
-        st.session_state['diagnosis_result'] = diagnosis_result
-        
-        # 2. Matching Solutions (Semantic Search)
-        try:
-            df = pd.read_csv("data/tools_db.csv")
-            recommended_tools = find_matching_solutions(
-                df, 
-                pain_point,  # Pass full pain point text for semantic matching
-                diagnosis_result.key_keywords if diagnosis_result else []
-            )
-        except Exception as e:
-            recommended_tools = []
-        st.session_state['recommended_tools'] = recommended_tools
-        
-        # 3. Generate Dynamic Recommendation Reasons
-        if recommended_tools:
-            dynamic_reasons = generate_recommendation_reasons(pain_point, industry, recommended_tools)
-            st.session_state['recommendation_reasons'] = dynamic_reasons
-        else:
-            st.session_state['recommendation_reasons'] = []
-            
-        # 3. Roadmap Generation
-        if recommended_tools:
-            raw_roadmap = generate_roadmap(industry, pain_point, recommended_tools)
-            # Clean Markdown artifacts
-            cleaned_roadmap = raw_roadmap.replace("```markdown", "").replace("```", "").strip()
-            st.session_state['roadmap_markdown'] = cleaned_roadmap
-        else:
-            st.session_state['roadmap_markdown'] = ""
-            
-        # --- PROCESSING COMPLETE: REMOVE OVERLAY ---
-        loading_placeholder.empty()
-        
-        # Set Flag
-        st.session_state['analysis_done'] = True
-        
-        # Force rerun to immediately show results (fixes double-click issue on Streamlit Cloud)
-        st.rerun()
+# STEP 2: Render UI based on state (AFTER processing is complete)
+if st.session_state['analysis_done']:
     # --- RENDER RESULTS (From Session State) ---
-    if st.session_state['analysis_done']:
-        diagnosis_result = st.session_state['diagnosis_result']
-        recommended_tools = st.session_state['recommended_tools']
-        roadmap_markdown = st.session_state['roadmap_markdown']
-        recommendation_reasons = st.session_state.get('recommendation_reasons', [])
+    diagnosis_result = st.session_state['diagnosis_result']
+    recommended_tools = st.session_state['recommended_tools']
+    roadmap_markdown = st.session_state['roadmap_markdown']
+    recommendation_reasons = st.session_state.get('recommendation_reasons', [])
     
     # [1] Diagnosis
     st.markdown("<div class='section-subheader'>1. 기업 AI 도입 역량 진단 (Diagnosis)</div>", unsafe_allow_html=True)
@@ -422,3 +362,59 @@ else:
         st.markdown(cleaned_content)
     else:
          st.warning("추천된 솔루션이 없어 커리큘럼을 생성할 수 없습니다.")
+
+else:
+    # --- INITIAL STATE (Empty State - Show preview) ---
+    st.info("AS-IS 정밀 진단부터 TO-BE 실행 로드맵까지, 원스톱 솔루션")
+    
+    # Dashboard Overview (Dummy Stats for Visual)
+    st.markdown("<div class='section-subheader'>AI 솔루션 도입 효율성 및 기대 효과</div>", unsafe_allow_html=True)
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric(label="등록된 AI 솔루션", value="50+", delta="Live DB")
+    with col2:
+        st.metric(label="매칭 알고리즘", value="GPT-4o", delta="Active")
+    with col3:
+        st.metric(label="평균 도입 기간", value="4.2주", delta="-12% (YoY)")
+    with col4:
+        st.metric(label="예상 업무 효율", value="+35%", delta="업계 평균 상회")
+
+    # Preview of Tools - Height restricted for one-page view
+    st.markdown("<div class='section-subheader'>사용 가능한 솔루션 리스트 (미리보기)</div>", unsafe_allow_html=True)
+    try:
+        df = pd.read_csv("data/tools_db.csv")
+        
+        # UI Tweak: Convert 'Complexity' text to Discrete Visual Bars
+        def get_complexity_bars(level):
+            if level == '하': return "█" 
+            elif level == '중': return "█ █" 
+            elif level == '상': return "█ █ █" 
+            return level
+            
+        df['난이도'] = df['Complexity'].apply(get_complexity_bars)
+        
+        # Select and Reorder columns for display
+        display_df = df[['Tool Name', 'Category', 'Description', 'Pricing Model', '난이도']]
+        
+        # Apply Styling (Blue Color for Complexity)
+        styled_df = display_df.style.applymap(
+            lambda x: 'color: #2563EB; font-weight: bold;', 
+            subset=['난이도']
+        )
+        
+        st.dataframe(
+            styled_df, 
+            use_container_width=True, 
+            hide_index=True, 
+            height=350,
+            column_config={
+                "난이도": st.column_config.TextColumn("구축 난이도"),
+                "Pricing Model": st.column_config.TextColumn("가격 모델"),
+                "Tool Name": st.column_config.TextColumn("솔루션명"),
+                "Category": st.column_config.TextColumn("카테고리"),
+                "Description": st.column_config.TextColumn("설명"),
+            }
+        )
+    except FileNotFoundError:
+        st.error("데이터베이스 파일을 찾을 수 없습니다.")
