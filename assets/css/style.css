@@ -286,13 +286,13 @@ div[data-testid="stVerticalBlock"]>div {
 .loading-overlay {
     position: fixed;
     top: 0;
-    left: 20rem;
-    /* Offset for sidebar (approx width) */
-    width: calc(100vw - 20rem);
-    /* Remaining width */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
     height: 100vh;
-    background: rgba(255, 255, 255, 0.4);
-    z-index: 90;
+    background: rgba(255, 255, 255, 0.85);
+    z-index: 9999;
     display: flex;
     justify-content: center;
     align-items: center;
