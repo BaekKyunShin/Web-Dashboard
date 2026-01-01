@@ -277,9 +277,9 @@ div[data-testid="stVerticalBlock"]>div {
     margin-bottom: 0.5rem !important;
 }
 
-/* Info Box (st.info) - Larger font for main tagline */
-[data-testid="stAlert"] p {
-    font-size: 1.2rem !important;
+/* Info Box (st.info) - Larger font for main tagline (main content only) */
+.main [data-testid="stAlert"] p {
+    font-size: 1.1rem !important;
     line-height: 1.5;
 }
 
