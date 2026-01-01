@@ -185,6 +185,8 @@ else:
         # Set Flag
         st.session_state['analysis_done'] = True
         
+        # Force rerun to immediately show results (fixes double-click issue on Streamlit Cloud)
+        st.rerun()
     # --- RENDER RESULTS (From Session State) ---
     if st.session_state['analysis_done']:
         diagnosis_result = st.session_state['diagnosis_result']
@@ -264,7 +266,20 @@ else:
             if "hubspot" in tool: return "마케팅, 영업, 서비스를 통합하는 CRM 플랫폼입니다. AI로 콘텐츠 생성과 고객 관리를 자동화합니다."
             if "canva" in tool: return "AI 디자인 도구 모음입니다. 템플릿과 AI 기능으로 누구나 전문적인 디자인을 제작합니다."
             if "writer" in tool: return "엔터프라이즈급 생성형 AI 플랫폼입니다. 브랜드 가이드에 맞는 콘텐츠를 일관되게 생성합니다."
+            # Inventory/ERP/Manufacturing tools
+            if "fishbowl" in tool: return "중소 제조업체를 위한 AI 재고 추적 및 창고 관리 시스템입니다. 실시간 재고 현황 파악과 자동 재주문 기능으로 재고 관리를 최적화합니다."
+            if "zoho inventory" in tool or "zoho" in tool: return "다채널 판매 환경을 위한 AI 재고 관리 플랫폼입니다. 자동 재주문 시스템으로 재고 부족과 과잉을 방지하고 주문 처리를 간소화합니다."
+            if "oracle" in tool or "netsuite" in tool: return "클라우드 기반 ERP 솔루션으로 재고 추적과 수요 예측을 자동화합니다. 제조업체가 수요 변동에 빠르게 대응할 수 있도록 지원합니다."
+            if "sap" in tool or "ibp" in tool: return "AI 기반 수요 예측 및 재고 최적화 플랫폼입니다. 공급망 전체를 통합 관리하여 재고 비용을 절감하고 서비스 수준을 높입니다."
+            if "cin7" in tool: return "옴니채널 재고 관리 및 주문 처리 자동화 플랫폼입니다. 오프라인 매장과 온라인 채널의 재고를 실시간으로 동기화합니다."
+            if "katana" in tool: return "AI 기반 제조 자원 계획(MRP) 및 실시간 재고 관리 도구입니다. 생산 계획과 재고 수준을 최적화하여 제조 효율을 높입니다."
+            if "landing ai" in tool or "landing" in tool: return "제조업 불량 검출을 위한 컴퓨터 비전 AI 플랫폼입니다. 품질 검사를 자동화하여 불량률을 크게 낮추고 검사 속도를 높입니다."
+            if "cognex" in tool or "vidi" in tool: return "딥러닝 기반 산업용 비전 AI로 제품 결함을 자동 탐지합니다. 복잡한 품질 검사 작업을 자동화하여 품질 관리 비용을 절감합니다."
+            if "minitab" in tool: return "AI 기반 통계적 품질관리(SPC) 및 공정 분석 도구입니다. 품질 불량의 근본 원인을 분석하고 공정을 개선하여 제품 품질을 높입니다."
             # Category-based fallbacks (more specific)
+            if "재고" in cat or "erp" in cat: return "AI 기반 재고 관리 솔루션으로, 실시간 재고 추적과 수요 예측으로 재고 최적화를 지원합니다."
+            if "품질" in cat or "제조" in cat: return "AI 기반 품질 관리 솔루션으로, 불량 검출과 공정 분석을 자동화하여 제품 품질을 높입니다."
+            if "공급망" in cat: return "AI 기반 공급망 관리 솔루션으로, 수요 예측과 재고 최적화로 공급망 효율을 높입니다."
             if "고객 지원" in cat or "고객지원" in cat: return "AI 기반 고객 서비스 솔루션으로, 고객 문의를 자동 분류하고 빠른 응대를 지원하여 고객 만족도를 높입니다."
             if "오디오" in cat: return "AI 오디오 기술 솔루션으로, 음성 합성, 녹음, 편집 등 오디오 관련 작업을 자동화하고 품질을 높입니다."
             if "비디오" in cat: return "AI 비디오 제작 도구로, 영상 편집, 자막 생성, 콘텐츠 자동화로 미디어 제작 효율을 높입니다."
