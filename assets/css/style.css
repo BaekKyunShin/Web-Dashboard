@@ -218,6 +218,12 @@ ul[data-testid="stSelectboxVirtualDropdown"] li {
     background-color: #F8FAFC;
     border-right: 1px solid #E2E8F0;
     padding-top: 0 !important;
+    min-width: 25rem !important;
+    width: 25rem !important;
+}
+
+[data-testid="stSidebar"]>div:first-child {
+    width: 25rem !important;
 }
 
 [data-testid="stSidebar"]>div:first-child {
