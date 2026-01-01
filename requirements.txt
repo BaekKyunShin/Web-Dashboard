@@ -7,4 +7,5 @@ pydantic
 python-dotenv
 langchain-community
 langchain-core
+numpy
 

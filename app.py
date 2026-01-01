@@ -67,6 +67,9 @@ if 'recommended_tools' not in st.session_state:
     st.session_state['recommended_tools'] = []
 if 'roadmap_markdown' not in st.session_state:
     st.session_state['roadmap_markdown'] = ""
+if 'recommendation_reasons' not in st.session_state:
+    st.session_state['recommendation_reasons'] = []
+
 
 if not st.session_state['analysis_done'] and not analyze_submitted:
     # Initial State (Empty State)
@@ -127,7 +130,7 @@ if not st.session_state['analysis_done'] and not analyze_submitted:
 else:
     # --- Step 3: Agent Execution Logic (Triggered by Form Submit) ---
     if analyze_submitted:
-        from src.modules.llm_logic import run_diagnosis_agent, find_matching_solutions, generate_roadmap
+        from src.modules.llm_logic import run_diagnosis_agent, find_matching_solutions, generate_roadmap, generate_recommendation_reasons
         
         # Loading Overlay Injection
         loading_placeholder = st.empty()
@@ -148,13 +151,24 @@ else:
         diagnosis_result = run_diagnosis_agent(industry, company_size, pain_point)
         st.session_state['diagnosis_result'] = diagnosis_result
         
-        # 2. Matching Solutions
+        # 2. Matching Solutions (Semantic Search)
         try:
             df = pd.read_csv("data/tools_db.csv")
-            recommended_tools = find_matching_solutions(df, diagnosis_result.key_keywords if diagnosis_result else [])
+            recommended_tools = find_matching_solutions(
+                df, 
+                pain_point,  # Pass full pain point text for semantic matching
+                diagnosis_result.key_keywords if diagnosis_result else []
+            )
         except Exception as e:
             recommended_tools = []
         st.session_state['recommended_tools'] = recommended_tools
+        
+        # 3. Generate Dynamic Recommendation Reasons
+        if recommended_tools:
+            dynamic_reasons = generate_recommendation_reasons(pain_point, industry, recommended_tools)
+            st.session_state['recommendation_reasons'] = dynamic_reasons
+        else:
+            st.session_state['recommendation_reasons'] = []
             
         # 3. Roadmap Generation
         if recommended_tools:
@@ -176,6 +190,7 @@ else:
         diagnosis_result = st.session_state['diagnosis_result']
         recommended_tools = st.session_state['recommended_tools']
         roadmap_markdown = st.session_state['roadmap_markdown']
+        recommendation_reasons = st.session_state.get('recommendation_reasons', [])
     
     # [1] Diagnosis
     st.markdown("<div class='section-subheader'>1. 기업 AI 도입 역량 진단 (Diagnosis)</div>", unsafe_allow_html=True)
@@ -193,8 +208,10 @@ else:
         # Layout: Grid of 3 columns (User requested 3 items)
         
         # Tool Introduction (What is this tool?)
-        def get_tool_intro(tool_name):
+        def get_tool_intro(tool_name, category=""):
             tool = tool_name.lower()
+            cat = category.lower() if category else ""
+            # Specific tool mappings
             if "zapier" in tool: return "5,000개 이상의 앱을 연결하는 노코드 자동화 플랫폼입니다. 코딩 없이 다양한 서비스 간 데이터 흐름을 자동화하여 반복 업무를 제거합니다."
             if "notion" in tool: return "AI 기반 올인원 협업 및 문서 관리 도구입니다. 프로젝트 관리, 위키, 데이터베이스를 하나의 워크스페이스에서 통합 관리할 수 있습니다."
             if "fireflies" in tool: return "AI 회의 녹음 및 자동 요약 서비스입니다. 화상회의를 자동 녹취하고, 핵심 액션 아이템과 결정사항을 추출해 공유합니다."
@@ -207,49 +224,166 @@ else:
             if "tableau" in tool: return "인터랙티브 데이터 시각화 및 분석 플랫폼입니다. 대량의 데이터를 직관적인 대시보드와 차트로 변환하여 인사이트를 도출합니다."
             if "power bi" in tool: return "Microsoft의 비즈니스 인텔리전스 도구입니다. Excel, Azure 등 MS 생태계와 완벽하게 통합되어 데이터 분석을 지원합니다."
             if "salesforce" in tool: return "AI 탑재 CRM 및 영업 자동화 플랫폼입니다. 고객 관계 관리부터 영업 예측, 마케팅 자동화까지 통합 솔루션을 제공합니다."
+            # Additional specific tools
+            if "intercom" in tool: return "AI 기반 고객 서비스 챗봇 플랫폼입니다. 24시간 자동 응대로 고객 문의를 즉시 처리하고 상담원 업무 부담을 줄입니다."
+            if "elevenlabs" in tool or "eleven labs" in tool: return "최첨단 AI 음성 합성 플랫폼입니다. 자연스러운 음성을 다국어로 생성하여 콘텐츠 제작, 더빙, 접근성 향상에 활용합니다."
+            if "zendesk" in tool: return "AI 기반 통합 고객 서비스 플랫폼입니다. 티켓 관리, 지식 베이스, 자동 응답 기능으로 고객 지원 품질을 높입니다."
+            if "synthesia" in tool: return "AI 아바타 기반 비디오 생성 플랫폼입니다. 텍스트만으로 전문 발표자가 등장하는 교육·마케팅 영상을 제작합니다."
+            if "heygen" in tool: return "AI 아바타 비디오 제작 도구입니다. 다양한 언어와 스타일의 영상을 빠르게 생성하여 글로벌 콘텐츠 제작을 지원합니다."
+            if "runway" in tool: return "AI 기반 비디오 편집 및 생성 플랫폼입니다. 텍스트 프롬프트로 영상을 생성하고 고급 편집 작업을 자동화합니다."
+            if "descript" in tool: return "텍스트 기반 오디오·비디오 편집 도구입니다. 문서 편집하듯 미디어를 편집하고 AI로 더빙, 자막을 생성합니다."
+            if "murf" in tool: return "전문 내레이션을 위한 AI 음성 생성기입니다. 120개 이상의 음성으로 교육, 광고, 프레젠테이션 나레이션을 제작합니다."
+            if "krisp" in tool: return "AI 노이즈 캔슬링 앱입니다. 통화와 회의 중 배경 소음을 실시간으로 제거하여 깨끗한 음성 품질을 보장합니다."
+            if "miro" in tool: return "AI 기능을 갖춘 협업 화이트보드 플랫폼입니다. 아이디어 정리, 마인드맵, 워크숍을 온라인에서 효과적으로 진행합니다."
+            if "monday" in tool: return "AI 기반 프로젝트 관리 플랫폼입니다. 워크플로우 자동화와 AI 인사이트로 팀 생산성을 극대화합니다."
+            if "asana" in tool: return "AI 지원 프로젝트 관리 도구입니다. 업무 할당, 진행 상황 추적, 목표 관리를 스마트하게 지원합니다."
+            if "clickup" in tool: return "AI 지식 관리자가 탑재된 올인원 프로젝트 관리 플랫폼입니다. 문서, 태스크, 목표를 통합 관리합니다."
+            if "amplitude" in tool: return "AI 인사이트를 제공하는 제품 분석 플랫폼입니다. 사용자 행동 데이터를 분석하여 제품 개선 방향을 도출합니다."
+            if "mixpanel" in tool: return "이벤트 기반 제품 분석 도구입니다. 사용자 여정을 추적하고 전환율 개선을 위한 인사이트를 제공합니다."
+            if "pendo" in tool: return "AI 기반 제품 경험 플랫폼입니다. 사용자 행동 분석, 인앱 가이드, 피드백 수집을 통합 지원합니다."
+            if "drift" in tool: return "대화형 마케팅 및 영업 플랫폼입니다. AI 챗봇으로 웹사이트 방문자를 리드로 전환합니다."
+            if "typeform" in tool: return "AI 기반 폼 빌더입니다. 대화형 설문조사와 데이터 수집으로 응답률을 높입니다."
+            if "surveymonkey" in tool: return "AI 분석 기능을 갖춘 설문조사 플랫폼입니다. 설문 설계부터 결과 분석까지 스마트하게 지원합니다."
+            if "airtable" in tool: return "AI 기능을 갖춘 스마트 스프레드시트 플랫폼입니다. 데이터베이스와 앱을 코딩 없이 구축합니다."
+            if "softr" in tool: return "노코드 앱 빌더입니다. Airtable, Google Sheets와 연동하여 고객 포털과 내부 도구를 빠르게 제작합니다."
+            if "framer" in tool: return "AI 기반 웹 디자인 도구입니다. 디자인과 퍼블리싱을 원스톱으로 처리하여 빠르게 웹사이트를 제작합니다."
+            if "webflow" in tool: return "비주얼 웹 개발 플랫폼입니다. 코딩 없이 전문적인 반응형 웹사이트를 디자인하고 배포합니다."
+            if "shopify" in tool: return "이커머스 플랫폼의 AI 도구 모음입니다. 상품 설명 생성, 재고 관리, 마케팅 자동화를 지원합니다."
+            if "adcreative" in tool: return "AI 광고 크리에이티브 생성 도구입니다. 고전환율 광고 이미지와 배너를 자동으로 제작합니다."
+            if "feedhive" in tool: return "AI 소셜 미디어 관리 도구입니다. 콘텐츠 스케줄링, 자동 게시, 성과 분석을 통합 지원합니다."
+            if "surfer" in tool: return "AI 기반 SEO 최적화 도구입니다. 콘텐츠 분석과 키워드 추천으로 검색 순위를 높입니다."
+            if "github copilot" in tool or "copilot" in tool: return "AI 페어 프로그래머입니다. 코드 자동 완성과 함수 제안으로 개발 속도를 높입니다."
+            if "claude" in tool: return "Anthropic의 안전하고 유용한 AI 어시스턴트입니다. 복잡한 분석, 글쓰기, 코딩 작업을 지원합니다."
+            if "perplexity" in tool: return "AI 기반 대화형 검색 엔진입니다. 복잡한 질문에 출처와 함께 정확한 답변을 제공합니다."
+            if "loom" in tool: return "AI 요약 기능을 갖춘 비디오 메시징 도구입니다. 화면 녹화로 비동기 커뮤니케이션을 효율화합니다."
+            if "gamma" in tool: return "AI 기반 프레젠테이션 도구입니다. 아이디어를 입력하면 디자인된 슬라이드를 자동 생성합니다."
+            if "tome" in tool: return "AI 스토리텔링 플랫폼입니다. 프롬프트로 시각적으로 풍부한 프레젠테이션을 만듭니다."
+            if "beautiful.ai" in tool or "beautiful ai" in tool: return "생성형 AI 프레젠테이션 도구입니다. 콘텐츠를 추가하면 자동으로 레이아웃을 디자인합니다."
+            if "gong" in tool: return "영업 인텔리전스 플랫폼입니다. 고객 대화를 AI로 분석하여 영업 성과를 높입니다."
+            if "lavender" in tool: return "AI 이메일 비서입니다. 영업 이메일의 톤과 효과를 분석하여 응답률을 높입니다."
+            if "hubspot" in tool: return "마케팅, 영업, 서비스를 통합하는 CRM 플랫폼입니다. AI로 콘텐츠 생성과 고객 관리를 자동화합니다."
+            if "canva" in tool: return "AI 디자인 도구 모음입니다. 템플릿과 AI 기능으로 누구나 전문적인 디자인을 제작합니다."
+            if "writer" in tool: return "엔터프라이즈급 생성형 AI 플랫폼입니다. 브랜드 가이드에 맞는 콘텐츠를 일관되게 생성합니다."
+            # Category-based fallbacks (more specific)
+            if "고객 지원" in cat or "고객지원" in cat: return "AI 기반 고객 서비스 솔루션으로, 고객 문의를 자동 분류하고 빠른 응대를 지원하여 고객 만족도를 높입니다."
+            if "오디오" in cat: return "AI 오디오 기술 솔루션으로, 음성 합성, 녹음, 편집 등 오디오 관련 작업을 자동화하고 품질을 높입니다."
+            if "비디오" in cat: return "AI 비디오 제작 도구로, 영상 편집, 자막 생성, 콘텐츠 자동화로 미디어 제작 효율을 높입니다."
+            if "분석" in cat or "데이터" in cat: return "AI 데이터 분석 솔루션으로, 복잡한 데이터에서 인사이트를 도출하고 의사결정을 지원합니다."
+            if "프로젝트" in cat: return "AI 기반 프로젝트 관리 도구로, 업무 자동화와 진행 상황 추적으로 팀 생산성을 높입니다."
+            if "마케팅" in cat: return "AI 마케팅 도구로, 콘텐츠 생성과 캠페인 최적화를 자동화하여 마케팅 효율을 높입니다."
+            if "영업" in cat or "crm" in cat: return "AI 영업 지원 솔루션으로, 고객 관계 관리와 영업 프로세스를 최적화합니다."
+            if "디자인" in cat: return "AI 디자인 도구로, 이미지 생성과 편집을 자동화하여 크리에이티브 작업 속도를 높입니다."
+            if "생산성" in cat: return "AI 생산성 도구로, 반복 업무를 자동화하고 협업을 강화하여 업무 효율을 높입니다."
+            if "자동화" in cat: return "워크플로우 자동화 플랫폼으로, 수작업을 줄이고 프로세스를 표준화하여 생산성을 높입니다."
+            if "회의" in cat: return "AI 회의 지원 도구로, 녹취, 요약, 액션 아이템 추출을 자동화하여 회의 효율을 높입니다."
+            if "커뮤니케이션" in cat: return "AI 커뮤니케이션 도구로, 작문, 번역, 메시징을 지원하여 소통 품질을 높입니다."
+            if "프레젠테이션" in cat: return "AI 프레젠테이션 도구로, 슬라이드 디자인과 콘텐츠 생성을 자동화하여 발표 준비 시간을 단축합니다."
+            if "개발" in cat: return "AI 개발 도구로, 코드 자동 완성과 버그 탐지로 개발 생산성을 높입니다."
+            if "검색" in cat: return "AI 검색 도구로, 정확한 정보 검색과 요약으로 리서치 시간을 단축합니다."
+            if "노코드" in cat or "로우코드" in cat: return "노코드/로우코드 플랫폼으로, 프로그래밍 없이 앱과 자동화를 구축할 수 있습니다."
+            if "설문" in cat: return "AI 설문조사 도구로, 설문 설계와 결과 분석을 자동화하여 인사이트를 빠르게 도출합니다."
+            if "이커머스" in cat or "커머스" in cat: return "AI 이커머스 도구로, 상품 관리, 마케팅, 고객 응대를 자동화합니다."
+            if "seo" in cat: return "AI SEO 도구로, 콘텐츠 최적화와 키워드 분석으로 검색 노출을 높입니다."
+            if "소셜" in cat: return "AI 소셜 미디어 관리 도구로, 콘텐츠 스케줄링과 성과 분석을 자동화합니다."
+            if "웹" in cat: return "AI 웹 개발 도구로, 디자인과 퍼블리싱을 효율화하여 웹사이트 제작 속도를 높입니다."
+            if "제품" in cat: return "AI 제품 관리 도구로, 사용자 분석과 피드백 수집으로 제품 개선을 지원합니다."
+            if "일반" in cat or "ai" in cat: return "범용 AI 어시스턴트로, 글쓰기, 분석, 코딩 등 다양한 업무를 지원합니다."
+            # Default fallback (should rarely be used now)
             return "AI 기반 업무 효율화 솔루션으로, 기존 워크플로우에 쉽게 통합하여 생산성을 높일 수 있습니다."
         
-        # Recommendation Reason (2-3 lines, more detailed)
-        def get_recommendation_reason(tool_name, category):
-            tool = tool_name.lower()
-            cat = category.lower()
-            if "zapier" in tool: return "귀사의 반복적인 수작업 프로세스를 자동화하여 인적 오류를 줄이고 업무 효율을 극대화할 수 있습니다. 다양한 툴 간 데이터 연동으로 사일로 현상을 해결합니다."
-            if "notion" in tool: return "분산된 팀 협업 도구를 하나로 통합하여 정보 검색 시간을 단축하고 지식 공유를 활성화합니다. AI Q&A 기능으로 문서 내 정보를 즉시 찾을 수 있습니다."
-            if "fireflies" in tool: return "회의록 작성에 소요되는 시간을 제거하고, 중요 결정사항과 액션 아이템을 자동 추출합니다. 팀원 간 정보 공유 속도가 크게 향상됩니다."
-            if "chatgpt" in tool: return "임직원들이 업무 중 발생하는 질문에 즉시 답변을 받고, 문서 초안 작성, 데이터 분석 등 다양한 태스크를 AI로 가속화할 수 있습니다."
-            if "jasper" in tool: return "마케팅팀의 콘텐츠 생산 속도를 획기적으로 높이고, 일관된 브랜드 보이스를 유지하면서 다양한 채널용 콘텐츠를 생성할 수 있습니다."
-            if "midjourney" in tool: return "디자이너 리소스 없이도 고품질 시각 자료를 빠르게 생성하여 마케팅 및 제안서 작성 시간을 단축합니다. 아이데이션 단계에서 특히 유용합니다."
-            # Fallback based on category
-            if "마케팅" in cat: return "마케팅 콘텐츠 생성과 캠페인 운영을 자동화하여 팀의 창의적 업무에 집중할 시간을 확보합니다. ROI 측정과 최적화도 지원합니다."
-            if "영업" in cat: return "고객 데이터를 체계적으로 관리하고 영업 파이프라인을 시각화하여 성사율을 높입니다. AI 기반 고객 인사이트도 제공합니다."
-            if "생산성" in cat or "자동화" in cat: return "반복적인 수작업을 자동화하여 직원들이 고부가가치 업무에 집중할 수 있게 합니다. 평균 30% 이상의 시간 절감 효과가 있습니다."
-            if "분석" in cat: return "복잡한 데이터를 직관적으로 시각화하여 빠른 의사결정을 지원합니다. 실시간 대시보드로 핵심 KPI를 모니터링할 수 있습니다."
-            return "AI 기술을 활용하여 기존 업무 방식을 혁신하고 전반적인 생산성과 품질을 향상시킬 수 있습니다."
+        # Note: Recommendation reasons are now dynamically generated by LLM (see llm_logic.py)
         
         # Benefit Text (Expected outcome)
         def get_benefit_text(tool_name, category):
             tool = tool_name.lower()
             cat = category.lower()
+            # Specific tool mappings
             if "zapier" in tool: return "예상 효과: 수작업 시간 30% 이상 절감"
             if "notion" in tool: return "예상 효과: 팀 협업 효율 40% 향상"
             if "fireflies" in tool: return "예상 효과: 회의록 작성 시간 50% 단축"
             if "chatgpt" in tool: return "예상 효과: 문서 초안 작성 시간 60% 절감"
             if "jasper" in tool: return "예상 효과: 콘텐츠 생산 속도 10배 향상"
             if "midjourney" in tool: return "예상 효과: 디자인 시안 비용 70% 절감"
-            # Fallback
+            # Additional specific tools
+            if "intercom" in tool: return "예상 효과: 고객 응대 시간 67% 단축"
+            if "elevenlabs" in tool or "eleven labs" in tool: return "예상 효과: 음성 콘텐츠 제작 비용 80% 절감"
+            if "zendesk" in tool: return "예상 효과: 티켓 처리 시간 40% 단축"
+            if "synthesia" in tool: return "예상 효과: 교육 영상 제작 비용 80% 절감"
+            if "heygen" in tool: return "예상 효과: 영상 제작 시간 90% 단축"
+            if "runway" in tool: return "예상 효과: 영상 편집 시간 70% 단축"
+            if "descript" in tool: return "예상 효과: 미디어 편집 시간 50% 단축"
+            if "murf" in tool: return "예상 효과: 내레이션 비용 90% 절감"
+            if "krisp" in tool: return "예상 효과: 통화 품질 문제 95% 해결"
+            if "miro" in tool: return "예상 효과: 팀 아이디어 공유 속도 50% 향상"
+            if "monday" in tool: return "예상 효과: 프로젝트 가시성 60% 향상"
+            if "asana" in tool: return "예상 효과: 업무 완료율 25% 향상"
+            if "clickup" in tool: return "예상 효과: 팀 협업 효율 45% 향상"
+            if "amplitude" in tool: return "예상 효과: 제품 인사이트 발굴 3배 증가"
+            if "mixpanel" in tool: return "예상 효과: 전환율 개선 속도 40% 향상"
+            if "pendo" in tool: return "예상 효과: 사용자 온보딩 완료율 30% 향상"
+            if "drift" in tool: return "예상 효과: 리드 전환율 40% 향상"
+            if "typeform" in tool: return "예상 효과: 설문 응답률 50% 향상"
+            if "surveymonkey" in tool: return "예상 효과: 인사이트 도출 시간 60% 단축"
+            if "airtable" in tool: return "예상 효과: 데이터 관리 효율 50% 향상"
+            if "softr" in tool: return "예상 효과: 앱 개발 시간 80% 단축"
+            if "framer" in tool: return "예상 효과: 웹사이트 제작 시간 70% 단축"
+            if "webflow" in tool: return "예상 효과: 웹 개발 비용 60% 절감"
+            if "shopify" in tool: return "예상 효과: 이커머스 운영 효율 35% 향상"
+            if "adcreative" in tool: return "예상 효과: 광고 제작 시간 80% 단축"
+            if "feedhive" in tool: return "예상 효과: SNS 관리 시간 60% 절감"
+            if "surfer" in tool: return "예상 효과: 검색 순위 2배 향상"
+            if "github copilot" in tool or "copilot" in tool: return "예상 효과: 코딩 속도 55% 향상"
+            if "claude" in tool: return "예상 효과: 분석 및 작문 효율 50% 향상"
+            if "perplexity" in tool: return "예상 효과: 리서치 시간 70% 단축"
+            if "loom" in tool: return "예상 효과: 회의 시간 30% 절감"
+            if "gamma" in tool: return "예상 효과: 프레젠테이션 제작 시간 80% 단축"
+            if "tome" in tool: return "예상 효과: 발표 자료 품질 50% 향상"
+            if "beautiful.ai" in tool or "beautiful ai" in tool: return "예상 효과: 슬라이드 디자인 시간 70% 단축"
+            if "gong" in tool: return "예상 효과: 영업 성사율 30% 향상"
+            if "lavender" in tool: return "예상 효과: 이메일 응답률 45% 향상"
+            if "hubspot" in tool: return "예상 효과: 마케팅 ROI 40% 향상"
+            if "canva" in tool: return "예상 효과: 디자인 제작 시간 75% 단축"
+            if "writer" in tool: return "예상 효과: 콘텐츠 일관성 90% 유지"
+            if "copy.ai" in tool: return "예상 효과: 카피라이팅 시간 80% 단축"
+            if "otter" in tool: return "예상 효과: 회의 기록 정확도 95% 달성"
+            if "grammarly" in tool: return "예상 효과: 영문 오류 90% 감소"
+            if "tableau" in tool: return "예상 효과: 데이터 인사이트 도출 3배 향상"
+            if "salesforce" in tool: return "예상 효과: 영업 효율 35% 향상"
+            # Category-based fallbacks (more specific)
+            if "고객 지원" in cat or "고객지원" in cat: return "예상 효과: 고객 응대 만족도 40% 향상"
+            if "오디오" in cat: return "예상 효과: 오디오 제작 시간 70% 단축"
+            if "비디오" in cat: return "예상 효과: 영상 제작 비용 60% 절감"
+            if "분석" in cat or "데이터" in cat: return "예상 효과: 데이터 분석 속도 50% 향상"
+            if "프로젝트" in cat: return "예상 효과: 프로젝트 완료율 30% 향상"
             if "마케팅" in cat: return "예상 효과: 콘텐츠 생성 효율 40% 향상"
-            if "영업" in cat: return "예상 효과: 영업 생산성 35% 향상"
-            if "생산성" in cat or "자동화" in cat: return "예상 효과: 업무 효율 30% 이상 향상"
+            if "영업" in cat or "crm" in cat: return "예상 효과: 영업 생산성 35% 향상"
+            if "디자인" in cat: return "예상 효과: 디자인 제작 시간 60% 단축"
+            if "생산성" in cat: return "예상 효과: 업무 효율 30% 이상 향상"
+            if "자동화" in cat: return "예상 효과: 수작업 시간 40% 절감"
+            if "회의" in cat: return "예상 효과: 회의 후속 조치 속도 50% 향상"
+            if "커뮤니케이션" in cat: return "예상 효과: 커뮤니케이션 품질 40% 향상"
+            if "프레젠테이션" in cat: return "예상 효과: 발표 준비 시간 60% 단축"
+            if "개발" in cat: return "예상 효과: 개발 속도 40% 향상"
+            if "검색" in cat: return "예상 효과: 정보 검색 시간 60% 단축"
+            if "노코드" in cat or "로우코드" in cat: return "예상 효과: 개발 의존도 70% 감소"
+            if "설문" in cat: return "예상 효과: 응답률 및 인사이트 40% 향상"
+            if "이커머스" in cat or "커머스" in cat: return "예상 효과: 운영 효율 35% 향상"
+            if "seo" in cat: return "예상 효과: 오가닉 트래픽 50% 증가"
+            if "소셜" in cat: return "예상 효과: SNS 운영 효율 50% 향상"
+            if "웹" in cat: return "예상 효과: 웹 제작 시간 60% 단축"
+            if "제품" in cat: return "예상 효과: 제품 개선 속도 40% 향상"
+            if "일반" in cat or "ai" in cat: return "예상 효과: 전반적 생산성 35% 향상"
+            # Default fallback
             return "예상 효과: 업무 생산성 향상"
 
-        # Use columns(3) for 3 items
-        cols = st.columns(3)
+        # Render all 3 cards in a single HTML flex container for equal heights
+        cards_html = '<div class="solution-cards-container">'
         for i, tool in enumerate(recommended_tools):
-            with cols[i]:
-                tool_intro = get_tool_intro(tool['Tool Name'])
-                rec_reason = get_recommendation_reason(tool['Tool Name'], tool['Category'])
-                benefit_text = get_benefit_text(tool['Tool Name'], tool['Category'])
-                html_content = f'''<div class="solution-card">
+            tool_intro = get_tool_intro(tool['Tool Name'], tool['Category'])
+            # Use dynamic recommendation reason from LLM, with fallback
+            rec_reason = recommendation_reasons[i] if i < len(recommendation_reasons) else "이 도구는 귀사의 업무 효율화에 도움이 됩니다."
+            benefit_text = get_benefit_text(tool['Tool Name'], tool['Category'])
+            cards_html += f'''<div class="solution-card">
 <div class="solution-header">
 <h3 class="solution-title">{tool['Tool Name']}</h3>
 </div>
@@ -261,7 +395,8 @@ else:
 <span>{benefit_text}</span>
 </div>
 </div>'''
-                st.markdown(html_content, unsafe_allow_html=True)
+        cards_html += '</div>'
+        st.markdown(cards_html, unsafe_allow_html=True)
 
     # [3] Curriculum
     st.markdown("<div class='section-subheader'>3. 교육 커리큘럼 (Curriculum)</div>", unsafe_allow_html=True)

@@ -1,10 +1,11 @@
 import streamlit as st
 import pandas as pd
-from langchain_openai import ChatOpenAI
+import numpy as np
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 
 # --- Configuration ---
 def get_llm():
@@ -77,38 +78,120 @@ def run_diagnosis_agent(industry, company_size, pain_points):
         st.error(f"Diagnosis Failed: {e}")
         return None
 
-# --- 2. Matching Logic (Rule-based + Semantic implementation possibility) ---
+# --- 2. Semantic Matching Logic (Embedding-based) ---
+def get_embeddings():
+    """Initialize and return the Embeddings instance."""
+    try:
+        api_key = st.secrets["OPENAI_API_KEY"]
+        return OpenAIEmbeddings(openai_api_key=api_key, model="text-embedding-3-small")
+    except Exception as e:
+        st.error("🚨 OpenAI API Key가 설정되지 않았습니다.")
+        return None
+
+def cosine_similarity(a, b):
+    """Calculate cosine similarity between two vectors."""
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
 @st.cache_data(show_spinner=False)
-def find_matching_solutions(df, keywords: List[str]):
+def find_matching_solutions(df, pain_points: str, keywords: List[str]):
     """
-    Simple keyword matching against the CSV tools database.
-    In a real-world scenario, vector search (Embeddings) would be better.
+    Semantic matching using OpenAI embeddings.
+    Combines pain point text with extracted keywords for better matching.
     """
     if df is None or df.empty:
         return []
     
-    # Normalize keywords
-    keywords = [k.lower() for k in keywords]
+    embeddings = get_embeddings()
+    if not embeddings:
+        return []
     
-    # Score each row based on keyword overlap in 'Category', 'Tool Name', 'Description'
-    def calculate_score(row):
-        score = 0
-        text_content = f"{row['Category']} {row['Tool Name']} {row['Description']}".lower()
-        for k in keywords:
-            if k in text_content:
-                score += 1
-        return score
+    # Create query text from pain points and keywords
+    query_text = f"{pain_points} {' '.join(keywords)}"
+    
+    try:
+        # Get embedding for the query
+        query_embedding = embeddings.embed_query(query_text)
+        
+        # Get embeddings for each tool (combine category + description)
+        tool_texts = [f"{row['Category']} {row['Tool Name']} {row['Description']}" for _, row in df.iterrows()]
+        tool_embeddings = embeddings.embed_documents(tool_texts)
+        
+        # Calculate similarity scores
+        similarities = [cosine_similarity(query_embedding, te) for te in tool_embeddings]
+        df = df.copy()
+        df['similarity_score'] = similarities
+        
+        # Sort by similarity and return top 3
+        top_results = df.sort_values(by='similarity_score', ascending=False).head(3)
+        
+        return top_results.to_dict('records')
+    except Exception as e:
+        st.error(f"매칭 실패: {e}")
+        # Fallback to keyword matching
+        keywords_lower = [k.lower() for k in keywords]
+        def calculate_score(row):
+            text_content = f"{row['Category']} {row['Tool Name']} {row['Description']}".lower()
+            return sum(1 for k in keywords_lower if k in text_content)
+        df = df.copy()
+        df['match_score'] = df.apply(calculate_score, axis=1)
+        top_results = df.sort_values(by='match_score', ascending=False).head(3)
+        return top_results.to_dict('records')
 
-    df['match_score'] = df.apply(calculate_score, axis=1)
+# --- 3. Dynamic Recommendation Reason Generator ---
+class RecommendationReasons(BaseModel):
+    reasons: List[str] = Field(description="List of recommendation reasons for each tool, in Korean")
+
+@st.cache_data(show_spinner=False)
+def generate_recommendation_reasons(pain_points: str, industry: str, recommended_tools: list):
+    """
+    Generate dynamic, context-aware recommendation reasons for each tool.
+    """
+    llm = get_llm()
+    if not llm:
+        return ["AI 기반 업무 효율화 솔루션입니다."] * len(recommended_tools)
     
-    # Sort by score and return top 3
-    top_results = df.sort_values(by='match_score', ascending=False).head(3)
+    parser = PydanticOutputParser(pydantic_object=RecommendationReasons)
     
-    # Convert to list of dicts for easier consumption
-    return top_results.to_dict('records')
+    tools_info = "\n".join([f"- {t['Tool Name']} ({t['Category']}): {t['Description']}" for t in recommended_tools])
+    
+    prompt = PromptTemplate(
+        template="""
+        You are an Enterprise AI Consultant. Generate specific, personalized recommendation reasons for each AI tool below.
+        
+        Context:
+        - Industry: {industry}
+        - Pain Points: {pain_points}
+        
+        Recommended Tools:
+        {tools_info}
+        
+        For EACH tool (in order), write a compelling 2-sentence recommendation reason in Korean that:
+        1. Directly addresses the specific pain point mentioned (e.g., if "재고관리가 어렵다", explain how this tool solves inventory issues)
+        2. Explains the concrete benefit for this specific company context
+        
+        Important: Each reason must be SPECIFIC to the pain point, NOT generic marketing copy.
+        
+        {format_instructions}
+        """,
+        input_variables=["industry", "pain_points", "tools_info"],
+        partial_variables={"format_instructions": parser.get_format_instructions()}
+    )
+    
+    chain = prompt | llm | parser
+    
+    try:
+        result = chain.invoke({
+            "industry": industry,
+            "pain_points": pain_points,
+            "tools_info": tools_info
+        })
+        return result.reasons
+    except Exception as e:
+        return [f"이 도구는 귀사의 {pain_points} 문제 해결에 도움이 됩니다."] * len(recommended_tools)
+
 
 # --- 3. Roadmap Agent ---
-@st.cache_data(show_spinner=False)
+# @st.cache_data(show_spinner=False)  # Temporarily disabled for testing
 def generate_roadmap(industry, pain_points, recommended_tools):
     llm = get_llm()
     if not llm: return "API Key Missing"
@@ -136,9 +219,15 @@ def generate_roadmap(industry, pain_points, recommended_tools):
         - 단계 distribution: 초급(3), 중급(4), 고급(3)
         - Each row must reference specific tool names from the recommended solutions
         - 교육 과정 should be specific course titles (e.g., "Zapier 기초 자동화 설계", "Notion AI 팀 협업 워크플로우")
-        - 주요 내용 should be detailed and specific (30-50 characters), describing exactly what participants will learn
+        - 주요 내용 MUST be between 45-55 characters (including spaces). This is CRITICAL.
+          * IMPORTANT: Count characters carefully. Each cell must have 45-55 characters.
+          * Too short examples (BAD): "AI 기본 대화 흐름 학습" (14자) - NOT ACCEPTABLE
+          * Good examples (45-55 characters):
+            - "AI 챗봇의 대화 흐름 설계 원리를 학습하고 실제 FAQ 기반 자동 응답 시나리오를 구축" (48자)
+            - "고객 지원 AI 챗봇의 기본 설정과 자동 응답 시나리오 설계 및 테스트 실습 진행" (46자)
+            - "음성 합성 기술의 기본 원리 이해 및 다양한 톤과 억양의 음성 생성 실습" (43자)
         - 시간 should be realistic (4시간, 6시간, 8시간, 10시간, 12시간, 16시간, 20시간)
-        - 산출물 should be specific, tangible deliverables (e.g., "자동화 워크플로우 3개 구축", "팀 협업 템플릿 5종")
+        - 산출물 should be specific, tangible deliverables (e.g., "자동화 워크플로우 구축", "팀 협업 템플릿", "고객 응대 시나리오")
         
         Output ONLY the markdown table, no headers, no introduction, no explanation:
         """,

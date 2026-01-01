@@ -113,25 +113,39 @@ ul[data-testid="stSelectboxVirtualDropdown"] li {
 }
 
 /* Primary Button */
-.stButton>button[kind="primary"] {
-    background-color: #2563EB;
+.stButton>button[kind="primary"],
+.stFormSubmitButton>button[kind="primary"],
+.stFormSubmitButton>button {
+    background-color: #2563EB !important;
     color: #FFFFFF !important;
     border: none;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    padding-top: 0.5rem !important;
-    /* Reset padding to ensure centering */
-    padding-bottom: 0.5rem !important;
-    line-height: normal !important;
-    /* Let flexbox handle vertical alignment */
+    padding: 0.55rem 1.25rem 0.55rem 1.25rem !important;
+    line-height: 1.2 !important;
+    min-height: 48px !important;
+    box-sizing: border-box !important;
 }
 
-.stButton>button[kind="primary"] p {
+.stButton>button[kind="primary"] p,
+.stFormSubmitButton>button[kind="primary"] p,
+.stFormSubmitButton>button p,
+.stButton>button[kind="primary"] span,
+.stFormSubmitButton>button[kind="primary"] span,
+.stFormSubmitButton>button span,
+.stButton>button[kind="primary"] div,
+.stFormSubmitButton>button[kind="primary"] div,
+.stFormSubmitButton>button div {
     color: #FFFFFF !important;
     font-weight: 700;
     margin: 0 !important;
-    line-height: 1 !important;
+    padding: 0 !important;
+    line-height: 1.5 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
 }
 
 /* Sidebar Primary Button - Force White Text (Override dark sidebar text rules) */
@@ -337,6 +351,21 @@ div[data-testid="stVerticalBlock"]>div {
     border-radius: 0 8px 8px 0;
 }
 
+/* Solution Cards Container - Equal Height with Flexbox */
+.solution-cards-container {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 1rem;
+    align-items: stretch !important;
+    width: 100%;
+}
+
+.solution-cards-container>.solution-card {
+    flex: 1 1 0 !important;
+    min-width: 0;
+    align-self: stretch !important;
+}
+
 /* Solution Card Improvements (Blue Border Design) */
 .solution-card {
     background-color: #FFFFFF;
@@ -346,7 +375,8 @@ div[data-testid="stVerticalBlock"]>div {
     border-radius: 8px;
     padding: 24px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    height: 100%;
+    display: flex;
+    flex-direction: column;
     transition: transform 0.2s;
 }
 
@@ -410,8 +440,8 @@ div[data-testid="stVerticalBlock"]>div {
     margin-bottom: 24px;
     line-height: 1.6;
     min-height: 40px;
-    /* Text alignment */
-    /* approximate 3 lines */
+    flex-grow: 1;
+    /* Fill remaining space to push benefit box to bottom */
 }
 
 .solution-benefit-box {
