@@ -50,7 +50,7 @@ with st.sidebar:
         analyze_submitted = st.form_submit_button("AI 솔루션 & 로드맵 생성", type="primary", use_container_width=True)
     
     st.markdown("---")
-    st.caption("Powered by GPT-4o & Streamlit\nVer 1.1.0 Platinum KR")
+    st.caption("Powered by GPT-4o & Streamlit\nMade by Baek Kyun Shin")
 
 # --- MAIN CONTENT ---
 # Compact Header
