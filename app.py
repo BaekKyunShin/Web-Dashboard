@@ -55,7 +55,7 @@ with st.sidebar:
 # --- MAIN CONTENT ---
 # Compact Header
 st.markdown("<div style='margin-bottom: 0px;'></div>", unsafe_allow_html=True) 
-display_header("KPC 기업 맞춤형 AX 인사이트 (Insight)")
+display_header("KPC AI 훈련 확산센터 훈련로드맵 생성 대시보드")
 
 # --- Session State Initialization ---
 if 'analysis_done' not in st.session_state:

@@ -57,6 +57,11 @@ body,
     color: #0F172A !important;
 }
 
+/* Hide "Press enter to submit form" instruction text */
+[data-testid="stForm"] [data-testid="InputInstructions"] {
+    display: none !important;
+}
+
 /* Fix Selectbox dropdown menu visibility */
 ul[data-testid="stSelectboxVirtualDropdown"] {
     background-color: #FFFFFF !important;
